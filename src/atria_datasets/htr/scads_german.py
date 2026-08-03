@@ -134,29 +134,3 @@ class ScaDSAI(Dataset[ScaDSAIConfig, SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
-
-
-if __name__ == "__main__":
-    dataset = ScaDSAIConfig(level="line").build_module()
-
-    print(len(dataset.train))
-    print(dataset.train[0])
-
-    cached = Cacher(FileStorageType.MSGPACK).cache(dataset)
-
-    sample = cached.train[0].load()
-    print(sample._annotations)
-
-    visualize(sample, output_dir="./test")
-
-    # dataset = ScaDSAIConfig(level="word").build_module()
-
-    # print(len(dataset.train))
-    # print(dataset.train[0])
-
-    # cached = Cacher(FileStorageType.MSGPACK).cache(dataset)
-
-    # sample = cached.train[0].load()
-    # print(sample._annotations)
-
-    # visualize(sample, output_dir="./test")

@@ -4,12 +4,10 @@ import uuid
 from collections.abc import Callable
 from typing import Any
 
-from atria_core.datasets._cacher import Cacher, FileStorageType
 from atria_core.datasets._hf_dataset import HuggingfaceDataset, HuggingfaceDatasetConfig
 from atria_core.types import SinglePageDocumentInstance
 from atria_core.types._generic._annotations import TranscriptionAnnotation
 from atria_core.types._generic._image import Image
-from atria_core.visualizers import visualize
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.registry import datasets
@@ -36,10 +34,3 @@ class FHSWFGermanHandwriting(
 ):
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
-
-
-dataset = FHSWFGermanHandwritingConfig().build_module()
-cached = Cacher(FileStorageType.MSGPACK).cache(dataset)
-for sample in cached.train:
-    sample = sample.load()
-    visualize(sample, output_dir="./test")

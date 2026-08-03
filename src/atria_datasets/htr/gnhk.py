@@ -131,26 +131,3 @@ class GNHK(Dataset[GNHKConfig, SinglePageDocumentInstance]):
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
 
-
-dataset = GNHKConfig().build_module()
-
-# live iteration
-train = dataset.split_iterator(DatasetSplitType.train)
-print(len(train))
-
-sample = train[0]
-print(sample)
-
-# cache
-cached = Cacher(FileStorageType.MSGPACK).cache(dataset)
-
-cached_train = cached.split_iterator(DatasetSplitType.train)
-cached_test = cached.split_iterator(DatasetSplitType.test)
-
-print(len(cached_train))
-print(cached_train[0].load()._annotations)
-x = cached_train[0].load()
-
-from atria_core.visualizers import visualize
-
-visualize(x, output_dir="./test")
