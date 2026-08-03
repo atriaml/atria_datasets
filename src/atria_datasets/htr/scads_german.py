@@ -1,21 +1,24 @@
-"""ScaDS.AI German Full-Page Handwriting dataset."""
+"""ScaDS.AI German Line- and Word-Level Handwriting Dataset."""
 
 from __future__ import annotations
 
+import csv
 import uuid
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
-from atria_core.datasets import Dataset, DatasetConfig
+import numpy as np
+from atria_core.datasets import Cacher, Dataset, DatasetConfig, FileStorageType
 from atria_core.datasets._download._download_manager import UrlSpec
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
     SinglePageDocumentInstance,
 )
-from atria_core.types._generic._annotations import TranscriptionAnnotation
+from atria_core.types._generic._annotations import OCRAnnotation, OCRLevel
 from atria_core.types._generic._image import Image
+from atria_core.visualizers import visualize
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.registry import datasets
@@ -28,38 +31,73 @@ _DATA_URLS = [
 ]
 
 _DESCRIPTION = (
-    "ScaDS.AI German Full-Page Handwriting dataset containing 77 handwritten "
-    "German Wikipedia excerpts with plain text ground truth."
+    "ScaDS.AI German Line- and Word-Level Handwriting Dataset "
+    "containing handwritten line and word images with transcription."
 )
 
-_HOMEPAGE = "https://zenodo.org/records/18283705"
+_HOMEPAGE = "https://zenodo.org/records/18301532"
 _LICENSE = "CC BY 4.0"
 
 
-@datasets.register("scadsai_german_fullpage")
+def _parse_annotations(csv_path: Path, level: OCRLevel) -> dict[str, OCRAnnotation]:
+    annotations = {}
+
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+
+        for row in reader:
+            image_key = row["line_file"] if level == OCRLevel.line else row["word_file"]
+
+            bbox = None
+
+            if all(
+                key in row and row[key] not in ("", None)
+                for key in ["x", "y", "width", "height"]
+            ):
+                x = float(row["x"])
+                y = float(row["y"])
+                w = float(row["width"])
+                h = float(row["height"])
+
+                bbox = np.asarray([[x, y, x + w, y + h]], dtype=np.float64)
+
+            annotations[image_key] = OCRAnnotation(
+                level=level, texts=np.asarray([row["text"]], dtype=object), bboxes=bbox
+            )
+
+    return annotations
+
+
+@datasets.register("scadsai_german_handwriting")
 @pydantic_dataclass(frozen=True)
-class ScaDSAIGermanFullPageConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> ScaDSAIGermanFullPage:
-        return ScaDSAIGermanFullPage(self, **kwargs)
+class ScaDSAIConfig(DatasetConfig):
+    level: OCRLevel = OCRLevel.line
+
+    def build_module(self, **kwargs: Any) -> ScaDSAI:
+        return ScaDSAI(self, **kwargs)
 
 
-class SplitIterator(Sequence[tuple[Path, Path]]):
-    def __init__(self, data_dir: str, split: DatasetSplitType):
-        root = Path(data_dir)
+class SplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
+    def __init__(self, data_dir: str, level: OCRLevel):
+        root = Path(data_dir) / "scadsai_german_handwriting_line_word_level_v01"
 
-        image_dir = root / "images"
-        text_dir = root / "ground_truth"
-        print("image_dir", image_dir)
+        image_dir = root / "images" / level.value
 
-        self.samples: list[tuple[Path, Path]] = []
+        csv_path = root / "ground_truth" / "csv" / f"{level}_annotations.csv"
 
-        for image_path in sorted(image_dir.glob("*.jpg")):
-            text_path = text_dir / f"{image_path.stem}.txt"
+        ocr_level = OCRLevel.line if level == "line" else OCRLevel.word
 
-            if text_path.exists():
-                self.samples.append((image_path, text_path))
+        annotations = _parse_annotations(csv_path, ocr_level)
 
-    def __getitem__(self, index: int) -> tuple[Path, Path]:
+        self.samples: list[tuple[Path, OCRAnnotation]] = []
+
+        for image_name, annotation in annotations.items():
+            image_path = image_dir / image_name
+
+            if image_path.exists():
+                self.samples.append((image_path, annotation))
+
+    def __getitem__(self, index: int) -> tuple[Path, OCRAnnotation]:
         return self.samples[index]
 
     def __len__(self) -> int:
@@ -67,21 +105,18 @@ class SplitIterator(Sequence[tuple[Path, Path]]):
 
 
 class InputTransform:
-    def __call__(self, sample: tuple[Path, Path]) -> SinglePageDocumentInstance:
-        image_path, text_path = sample
-
-        with open(text_path, encoding="utf-8") as f:
-            text = f.read().strip()
+    def __call__(
+        self, sample: tuple[Path, OCRAnnotation]
+    ) -> SinglePageDocumentInstance:
+        image_path, annotation = sample
 
         return SinglePageDocumentInstance(
             sample_id=str(uuid.uuid4()), visual=Image(file_path=str(image_path))
-        ).add_annotation(TranscriptionAnnotation(text=text))
+        ).add_annotation(annotation)
 
 
-class ScaDSAIGermanFullPage(
-    Dataset[ScaDSAIGermanFullPageConfig, SinglePageDocumentInstance]
-):
-    def _download_urls(self) -> list[UrlSpec]:
+class ScaDSAI(Dataset[ScaDSAIConfig, SinglePageDocumentInstance]):
+    def _download_urls(self) -> list[str]:
         return _DATA_URLS
 
     def _metadata(self) -> DatasetMetadata:
@@ -95,22 +130,33 @@ class ScaDSAIGermanFullPage(
     def _build_split_iterator(
         self, split: DatasetSplitType, data_dir: str
     ) -> SplitIterator:
-        return SplitIterator(data_dir=data_dir, split=split)
+        return SplitIterator(data_dir=data_dir, level=self.config.level)
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
 
 
-dataset = ScaDSAIGermanFullPageConfig().build_module()
+if __name__ == "__main__":
+    dataset = ScaDSAIConfig(level="line").build_module()
 
-train = dataset.split_iterator(DatasetSplitType.train)
+    print(len(dataset.train))
+    print(dataset.train[0])
 
-print(len(train))
-print(train[0])
+    cached = Cacher(FileStorageType.MSGPACK).cache(dataset)
 
-# cached = Cacher(FileStorageType.MSGPACK).cache(dataset)
+    sample = cached.train[0].load()
+    print(sample._annotations)
 
-# cached_train = cached.split_iterator(DatasetSplitType.train)
+    visualize(sample, output_dir="./test")
 
-print(len(train))
-print(train[0].load()._annotations)
+    # dataset = ScaDSAIConfig(level="word").build_module()
+
+    # print(len(dataset.train))
+    # print(dataset.train[0])
+
+    # cached = Cacher(FileStorageType.MSGPACK).cache(dataset)
+
+    # sample = cached.train[0].load()
+    # print(sample._annotations)
+
+    # visualize(sample, output_dir="./test")
