@@ -17,9 +17,9 @@ from atria_core.types import (
 from atria_core.types._generic._annotations import OCRAnnotation
 from atria_core.types._generic._elements import OCRLevel
 from atria_core.types._generic._image import Image
-from PIL import Image as PILImage
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
+from atria_datasets.htr._common import get_image_size
 from atria_datasets.parsers import IAMRecord, parse_iam_ascii, parse_iam_split
 from atria_datasets.registry import datasets
 from atria_datasets.utils import require_manual_path
@@ -56,7 +56,7 @@ def _bbox(record: IAMRecord, width: int, height: int) -> np.ndarray:
 def _build_annotation(
     image_path: Path, lines: list[IAMRecord], words_by_line: dict[str, list[IAMRecord]]
 ) -> OCRAnnotation:
-    width, height = PILImage.open(image_path).size
+    width, height = get_image_size(image_path)
     ids = [0]
     parent_ids = [-1]
     levels = [OCRLevel.page.value]

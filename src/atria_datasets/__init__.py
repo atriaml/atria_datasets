@@ -8,7 +8,10 @@ from .htr.german_kurrent_19c import GermanKurrent19CConfig  # noqa: F401
 from .htr.gnhk import GNHKConfig  # noqa: F401
 from .htr.iam import IAMConfig  # noqa: F401
 from .htr.iam_histdb import IAMHistDBConfig  # noqa: F401
-from .htr.icdar2017_escher import ICDAR2017EscherConfig  # noqa: F401
+from .htr.icdar2017_read_htr import (  # noqa: F401
+    ICDAR2017ReadHTRAConfig,
+    ICDAR2017ReadHTRBConfig,
+)
 from .htr.imgur5k import IMGUR5KConfig  # noqa: F401
 from .htr.koenigsfelden import KoenigsfeldenConfig  # noqa: F401
 from .htr.konzilsprotokolle import KonzilsprotokolleConfig  # noqa: F401

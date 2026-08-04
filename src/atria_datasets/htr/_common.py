@@ -1,4 +1,4 @@
-"""Shared iterators for HTR datasets with conventional sidecars."""
+"""Shared iterators and transforms for HTR datasets."""
 
 from __future__ import annotations
 
@@ -6,27 +6,48 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, overload
 
+import imagesize
 from atria_core.types import SinglePageDocumentInstance
 from atria_core.types._generic._elements import OCRLevel
 from atria_core.types._generic._image import Image
 from lxml import etree
-from PIL import Image as PILImage
 
 from atria_datasets.parsers import parse_page_xml
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"}
 
 
+def get_image_size(
+    image_path: str | Path, *, exif_rotation: bool = False
+) -> tuple[int, int]:
+    """Read dimensions from an image header without decoding its pixels."""
+    width, height = imagesize.get(image_path, exif_rotation=exif_rotation)
+    if width <= 0 or height <= 0:
+        raise ValueError(f"Could not read image dimensions from {image_path}")
+    return width, height
+
+
 def _path_sample_id(path: Path) -> str:
     return path.stem
 
 
-def _page_image_name(xml_path: Path) -> str | None:
-    """Read PAGE's imageFilename without parsing the complete annotation."""
-    for _, element in etree.iterparse(str(xml_path), events=("start",)):
+def _is_archive_artifact(path: Path) -> bool:
+    return "__MACOSX" in path.parts or path.name.startswith("._")
+
+
+def _page_image_info(xml_path: Path) -> tuple[bool, str | None]:
+    """Detect PAGE XML and read imageFilename without parsing it completely."""
+    elements = etree.iterparse(str(xml_path), events=("start",))
+    try:
+        _, root = next(elements)
+    except StopIteration:
+        return False, None
+    if etree.QName(root).localname != "PcGts":
+        return False, None
+    for _, element in elements:
         if etree.QName(element).localname == "Page":
-            return element.get("imageFilename")
-    return None
+            return True, element.get("imageFilename")
+    return False, None
 
 
 def _split_matches(path: Path, aliases: tuple[str, ...]) -> bool:
@@ -43,16 +64,24 @@ class PageXMLIterator(Sequence[tuple[Path, Path]]):
         root = Path(root)
         images: dict[str, list[Path]] = {}
         for path in root.rglob("*"):
-            if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES:
+            if (
+                path.is_file()
+                and path.suffix.lower() in IMAGE_SUFFIXES
+                and not _is_archive_artifact(path)
+            ):
                 images.setdefault(path.name.lower(), []).append(path)
                 images.setdefault(path.stem.lower(), []).append(path)
 
         self.samples: list[tuple[Path, Path]] = []
         paired_images: set[Path] = set()
         for xml_path in sorted(root.rglob("*.xml")):
-            if not _split_matches(xml_path, split_aliases):
+            if _is_archive_artifact(xml_path) or not _split_matches(
+                xml_path, split_aliases
+            ):
                 continue
-            image_name = _page_image_name(xml_path)
+            is_page_xml, image_name = _page_image_info(xml_path)
+            if not is_page_xml:
+                continue
             keys = []
             if image_name:
                 keys.extend(
@@ -93,14 +122,14 @@ class PageXMLIterator(Sequence[tuple[Path, Path]]):
 class PageXMLTransform:
     def __call__(self, sample: tuple[Path, Path]) -> SinglePageDocumentInstance:
         image_path, xml_path = sample
-        with PILImage.open(image_path) as image:
-            annotation = parse_page_xml(xml_path, image_size=image.size)
+        annotation = parse_page_xml(xml_path, image_size=get_image_size(image_path))
         return SinglePageDocumentInstance(
-            sample_id=_path_sample_id(image_path), visual=Image(file_path=str(image_path))
+            sample_id=_path_sample_id(image_path),
+            visual=Image(file_path=str(image_path)),
         ).add_annotation(annotation)
 
 
-class TextSidecarIterator(Sequence[tuple[Path, str]]):
+class TextFileIterator(Sequence[tuple[Path, str]]):
     def __init__(self, root: str | Path) -> None:
         root = Path(root)
         images = {
@@ -130,7 +159,7 @@ class TextSidecarIterator(Sequence[tuple[Path, str]]):
         return len(self.samples)
 
 
-class TextSidecarTransform:
+class TextAnnotationTransform:
     def __init__(self, *, level: OCRLevel | None = None) -> None:
         self.level = level
 
@@ -139,5 +168,6 @@ class TextSidecarTransform:
 
         image_path, text = sample
         return SinglePageDocumentInstance(
-            sample_id=_path_sample_id(image_path), visual=Image(file_path=str(image_path))
+            sample_id=_path_sample_id(image_path),
+            visual=Image(file_path=str(image_path)),
         ).add_annotation(TranscriptionAnnotation(text=text, level=self.level))

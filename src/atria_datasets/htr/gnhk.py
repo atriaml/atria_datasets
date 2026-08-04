@@ -17,9 +17,9 @@ from atria_core.types import (
 )
 from atria_core.types._generic._annotations import OCRAnnotation
 from atria_core.types._generic._image import Image
-from PIL import Image as PILImage
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
+from atria_datasets.htr._common import get_image_size
 from atria_datasets.registry import datasets
 
 _DATA_URLS = [
@@ -86,33 +86,31 @@ class SplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
         manifest_path = split_dir / f"{split.value}.manifest"
 
         annotations = _parse_manifest(manifest_path)
-
-        self.samples = []
-
-        for image_name, words in annotations.items():
-            image_path = split_dir / image_name
-
-            if not image_path.exists() or not words:
-                continue
-
-            width, height = PILImage.open(image_path).size
-            texts = [text for text, _, _ in words]
-            bboxes = np.clip(
-                np.stack([bbox for _, bbox, _ in words])
-                / np.array([width, height, width, height]),
-                0.0,
-                1.0,
-            )
-            polygons = [
-                np.clip(polygon / np.array([width, height]), 0.0, 1.0)
-                for _, _, polygon in words
-            ]
-
-            annotation = OCRAnnotation.from_words(texts, bboxes, segmentations=polygons)
-            self.samples.append((image_path, annotation))
+        self.samples = [
+            (split_dir / image_name, words)
+            for image_name, words in annotations.items()
+            if (split_dir / image_name).exists() and words
+        ]
+        self._annotation_cache: dict[int, OCRAnnotation] = {}
 
     def __getitem__(self, index: int) -> tuple[Path, OCRAnnotation]:
-        return self.samples[index]
+        if index < 0:
+            index += len(self.samples)
+
+        image_path, words = self.samples[index]
+        annotation = self._annotation_cache.get(index)
+        if annotation is None:
+            width, height = get_image_size(image_path, exif_rotation=True)
+
+            texts = [text for text, _, _ in words]
+            bboxes = np.stack([bbox for _, bbox, _ in words]) / np.array(
+                [width, height, width, height]
+            )
+            polygons = [polygon / np.array([width, height]) for _, _, polygon in words]
+            annotation = OCRAnnotation.from_words(texts, bboxes, segmentations=polygons)
+            self._annotation_cache[index] = annotation
+
+        return image_path, annotation
 
     def __len__(self) -> int:
         return len(self.samples)

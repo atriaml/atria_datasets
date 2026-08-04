@@ -10,6 +10,7 @@ historical PAGE-XML ground truth is line-level only.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +19,15 @@ from atria_core.types._generic._elements import OCRLevel
 from lxml import etree
 
 _ROOT_PARENT = -1
+_BARE_AMPERSAND = re.compile(rb"&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9A-Fa-f]+;)")
+
+
+def _parse_xml(xml_path: Path) -> etree._Element:
+    """Parse PAGE XML while preserving bare ampersands in legacy transcripts."""
+    xml = xml_path.read_bytes()
+    if _BARE_AMPERSAND.search(xml):
+        xml = _BARE_AMPERSAND.sub(b"&amp;", xml)
+    return etree.fromstring(xml)
 
 
 def _parse_points(points: str) -> np.ndarray:
@@ -72,7 +82,7 @@ def parse_page_xml(
     TextLine, Word, Coords, TextEquiv, Unicode, ReadingOrder,
     RegionRefIndexed) are stable across all of them.
     """
-    root = etree.parse(str(xml_path)).getroot()
+    root = _parse_xml(xml_path)
     ns_uri = etree.QName(root).namespace
     ns = {"pc": ns_uri} if ns_uri else {}
 
@@ -148,13 +158,19 @@ def parse_page_xml(
             for word in line.findall("pc:Word", ns):
                 _add(OCRLevel.word, line_id, _coords(word, ns), _text(word, ns))
 
-    # Page-level text is the newline-joined line texts in reading order,
-    # not left as the empty placeholder used while building the hierarchy.
-    texts[page_id] = "\n".join(
+    # Prefer aligned line text. Weakly annotated PAGE releases may instead
+    # store one transcript on each region or directly on the page.
+    line_text = "\n".join(
         text
         for level, text in zip(levels, texts, strict=True)
         if level == OCRLevel.line.value and text
     )
+    region_text = "\n".join(
+        text
+        for level, text in zip(levels, texts, strict=True)
+        if level == OCRLevel.block.value and text
+    )
+    texts[page_id] = line_text or region_text or _text(page, ns)
 
     lengths = np.array([0 if p is None else len(p) for p in polygons])
     p_max = int(lengths.max()) if len(lengths) else 0

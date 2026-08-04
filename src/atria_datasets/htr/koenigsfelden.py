@@ -13,7 +13,10 @@ from atria_datasets.registry import datasets
 @datasets.register("koenigsfelden")
 @pydantic_dataclass(frozen=True)
 class KoenigsfeldenConfig(DatasetConfig):
-    collection: Literal["kbs", "u17"] = "kbs"
+    # Zenodo's digitized_documents.zip explicitly excludes the cartularies
+    # described by kbs_pageXML.zip. U-17 is therefore the only collection in
+    # this release whose PAGE annotations can be paired with the bundled JPGs.
+    collection: Literal["kbs", "u17"] = "u17"
 
     def build_module(self, **kwargs: Any) -> Koenigsfelden:
         return Koenigsfelden(self, **kwargs)
@@ -25,6 +28,12 @@ class Koenigsfelden(PageXMLDataset):
     license_name = "CC BY 4.0"
 
     def _download_urls(self) -> list[UrlSpec]:
+        if self.config.collection == "kbs":
+            raise ValueError(
+                "The Koenigsfelden Zenodo release does not bundle the cartulary "
+                "images required by kbs_pageXML.zip. Use collection='u17' (the "
+                "default), whose images are included in digitized_documents.zip."
+            )
         page_xml = f"{self.config.collection}_pageXML.zip"
         return [
             UrlSpec(

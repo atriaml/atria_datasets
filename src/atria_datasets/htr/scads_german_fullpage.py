@@ -13,7 +13,7 @@ from atria_core.types import (
 from atria_core.types._generic._elements import OCRLevel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
-from atria_datasets.htr._common import TextSidecarIterator, TextSidecarTransform
+from atria_datasets.htr._common import TextAnnotationTransform, TextFileIterator
 from atria_datasets.registry import datasets
 
 
@@ -45,8 +45,8 @@ class ScaDSAIFullPage(Dataset[ScaDSAIFullPageConfig, SinglePageDocumentInstance]
 
     def _build_split_iterator(
         self, split: DatasetSplitType, data_dir: str
-    ) -> TextSidecarIterator:
-        return TextSidecarIterator(data_dir)
+    ) -> TextFileIterator:
+        return TextFileIterator(data_dir)
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
-        return TextSidecarTransform(level=OCRLevel.page)
+        return TextAnnotationTransform(level=OCRLevel.page)

@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 import io
 import json
-import os
 import queue
 import sqlite3
 import threading
@@ -14,16 +13,15 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from atria_core.datasets._dataset import Dataset
+from atria_core.datasets._cached_dataset import CachedDataset
+from atria_core.datasets._cacher import Cacher
+from atria_core.datasets._common import FileStorageType
 from atria_core.datasets._constants import (
     _DEFAULT_ATRIA_DATASETS_CACHE_DIR,
-    _DEFAULT_ATRIA_DATASETS_STORAGE_SUBDIR,
-    _DEFAULT_SNAPSHOT_PATH,
     DEFAULT_ATRIA_CACHE_DIR,
 )
-from atria_core.datasets._snapshot import DatasetSnapshot
+from atria_core.datasets._snapshot import CACHED_DATASET_SNAPSHOT_KIND, DatasetSnapshot
 from atria_core.datasets._snapshot_store import DatasetSnapshotStore
-from atria_core.registry._module_config import ModuleConfig
 from atria_core.types._generic._annotations import AnnotationType, OCRAnnotation
 from atria_core.types._generic._elements import OCRLevel
 from fastapi import FastAPI, HTTPException, Query
@@ -68,15 +66,15 @@ def _config_fields(config_cls: type[Any]) -> list[dict[str, Any]]:
     return fields
 
 
-def _dataset_id(path: Path) -> str:
-    return path.resolve().as_posix().replace("/", "__")
+def _snapshot_dataset_id(snapshot: DatasetSnapshot) -> str:
+    config_key = (
+        snapshot.config_hash or snapshot.config_name or snapshot.dataset_class_name
+    )
+    return f"{snapshot.dataset_class_name}::{config_key}"
 
 
 def _default_base_dir() -> Path:
     return Path(_DEFAULT_ATRIA_DATASETS_CACHE_DIR).expanduser()
-
-
-_STORAGE_PREFIXES = {"msgpack", "delta"}
 
 
 def _normalize_base_dir(value: str | None) -> str | None:
@@ -86,71 +84,6 @@ def _normalize_base_dir(value: str | None) -> str | None:
     if not normalized or normalized.lower() in {"none", "null"}:
         return None
     return normalized
-
-
-def _iter_child_dirs(path: Path) -> list[Path]:
-    try:
-        return sorted(
-            (entry for entry in path.iterdir() if entry.is_dir()),
-            key=lambda item: item.name,
-        )
-    except OSError:
-        return []
-
-
-def _iter_immediate_dirs(path: Path) -> list[Path]:
-    try:
-        with os.scandir(path) as entries:
-            return sorted(
-                (Path(entry.path) for entry in entries if entry.is_dir()),
-                key=lambda item: item.name,
-            )
-    except OSError:
-        return []
-
-
-def _discover_snapshot_paths(base_dir: Path) -> list[Path]:
-    resolved = base_dir.expanduser()
-    candidates: set[Path] = set()
-
-    def add_dataset_dir(path: Path) -> None:
-        snapshot = path / _DEFAULT_SNAPSHOT_PATH
-        if snapshot.is_file():
-            candidates.add(snapshot)
-
-    def add_storage_branch(path: Path) -> None:
-        for storage_prefix in sorted(_STORAGE_PREFIXES):
-            storage_type_dir = path / storage_prefix
-            if not storage_type_dir.is_dir():
-                continue
-            for dataset_dir in _iter_immediate_dirs(storage_type_dir):
-                add_dataset_dir(dataset_dir)
-
-    if not resolved.exists() or not resolved.is_dir():
-        return []
-
-    add_dataset_dir(resolved)
-
-    if resolved.name in _STORAGE_PREFIXES:
-        for dataset_dir in _iter_child_dirs(resolved):
-            add_dataset_dir(dataset_dir)
-        return sorted(candidates)
-
-    if resolved.name == _DEFAULT_ATRIA_DATASETS_STORAGE_SUBDIR:
-        add_storage_branch(resolved)
-        return sorted(candidates)
-
-    direct_storage = resolved / _DEFAULT_ATRIA_DATASETS_STORAGE_SUBDIR
-    if direct_storage.is_dir():
-        add_storage_branch(direct_storage)
-        return sorted(candidates)
-
-    for dataset_root in _iter_immediate_dirs(resolved):
-        storage_dir = dataset_root / _DEFAULT_ATRIA_DATASETS_STORAGE_SUBDIR
-        if storage_dir.is_dir():
-            add_storage_branch(storage_dir)
-
-    return sorted(candidates)
 
 
 class SettingsUpdateRequest(BaseModel):
@@ -338,9 +271,9 @@ class ExplorerState:
         self.store = ExplorerStore(
             Path(__file__).resolve().parent.parent / "state" / "explorer.db"
         )
-        self.dataset_paths: dict[str, Path] = {}
-        self.dataset_cache: dict[str, Dataset[Any, Any]] = {}
         self.inventory: dict[str, Any] | None = None
+        self.active_dataset_id: str | None = None
+        self.active_dataset: CachedDataset[Any] | None = None
         self._job_queue: queue.Queue[str] = queue.Queue()
         self._worker = threading.Thread(target=self._job_loop, daemon=True)
         self._worker.start()
@@ -366,10 +299,11 @@ class ExplorerState:
             base_dir = self.resolved_base_dir()
             discovered: list[dict[str, Any]] = []
             invalid: list[dict[str, str]] = []
-            dataset_paths: dict[str, Path] = {}
 
             if base_dir.exists():
-                for snapshot in DatasetSnapshot.discover(base_dir):
+                for snapshot in DatasetSnapshotStore.discover(
+                    base_dir, snapshot_kind=CACHED_DATASET_SNAPSHOT_KIND
+                ):
                     if snapshot.path is None:
                         invalid.append(
                             {
@@ -379,9 +313,9 @@ class ExplorerState:
                         )
                         continue
 
-                    payload = self._prepared_dataset_payload(snapshot, base_dir)
-                    discovered.append(payload)
-                    dataset_paths[payload["id"]] = snapshot.path.resolve()
+                    discovered.append(
+                        self._prepared_dataset_payload(snapshot, base_dir)
+                    )
 
             discovered.sort(
                 key=lambda item: (
@@ -391,12 +325,6 @@ class ExplorerState:
                 )
             )
 
-            self.dataset_paths = dataset_paths
-            self.dataset_cache = {
-                dataset_id: dataset
-                for dataset_id, dataset in self.dataset_cache.items()
-                if dataset_id in dataset_paths
-            }
             self.inventory = {
                 "base_dir": self.configured_base_dir(),
                 "resolved_base_dir": str(base_dir.resolve()),
@@ -407,6 +335,15 @@ class ExplorerState:
                 "scanned_at": _utc_now(),
             }
             return self.inventory
+
+    def _require_snapshot(self, dataset_id: str) -> DatasetSnapshot:
+        inventory = self.scan_inventory()
+        match = next(
+            (item for item in inventory["datasets"] if item["id"] == dataset_id), None
+        )
+        if match is None:
+            raise HTTPException(status_code=404, detail="Prepared dataset not found.")
+        return DatasetSnapshot.load(match["path"])
 
     def _prepared_dataset_payload(
         self, snapshot: DatasetSnapshot, base_dir: Path
@@ -419,7 +356,7 @@ class ExplorerState:
         except ValueError:
             relative_path = resolved_path.name
         return {
-            "id": _dataset_id(resolved_path),
+            "id": _snapshot_dataset_id(snapshot),
             "dataset_class_name": snapshot.dataset_class_name,
             "config_name": snapshot.config_name,
             "config_hash": snapshot.config_hash,
@@ -435,23 +372,21 @@ class ExplorerState:
             or {"description": "", "homepage": "", "license": ""},
         }
 
-    def get_dataset(self, dataset_id: str) -> Dataset[Any, Any]:
+    def get_dataset(self, dataset_id: str) -> CachedDataset[Any]:
         with self.lock:
-            path = self.dataset_paths.get(dataset_id)
-            if path is None:
-                self.scan_inventory(force=True)
-                path = self.dataset_paths.get(dataset_id)
-            if path is None:
+            if self.active_dataset_id == dataset_id and self.active_dataset is not None:
+                return self.active_dataset
+
+            snapshot = self._require_snapshot(dataset_id)
+            if snapshot.path is None:
                 raise HTTPException(
-                    status_code=404, detail="Prepared dataset not found."
+                    status_code=404,
+                    detail="Prepared dataset snapshot is missing its path.",
                 )
-            dataset = self.dataset_cache.get(dataset_id)
-            if dataset is None:
-                snapshot = DatasetSnapshot.load(path)
-                dataset = ModuleConfig.from_dict(snapshot.config).build_module(
-                    data_dir=str(path)
-                )
-                self.dataset_cache[dataset_id] = dataset
+
+            dataset = CachedDataset(snapshot.path)
+            self.active_dataset_id = dataset_id
+            self.active_dataset = dataset
             return dataset
 
     def enqueue_job(self, request: PrepareJobRequest) -> dict[str, Any]:
@@ -500,25 +435,18 @@ class ExplorerState:
         self.store.mark_running(job_id)
         try:
             config = datasets.get(job["dataset_name"])(**job["config"])
-            output_root = Path(job["output_root"]).expanduser().resolve()
-            prepared_dir = output_root / job["dataset_name"] / config.hash
             if job["source_dir"]:
                 dataset = config.build_module(
                     data_dir=str(Path(job["source_dir"]).expanduser().resolve())
                 )
             else:
-                dataset = config.build_module(data_dir=str(prepared_dir))
-            snapshot = DatasetSnapshotStore.write_source_snapshot(
-                dataset, Path(dataset.data_dir).resolve()
-            )
+                dataset = config.build_module()
+            cached = Cacher(FileStorageType.DELTALAKE).cache(dataset)
         except Exception as error:  # noqa: BLE001
             self.store.mark_failed(job_id, str(error))
             return
 
-        if snapshot.path is None:
-            self.store.mark_failed(job_id, "Source snapshot was written without a path.")
-            return
-        self.store.mark_complete(job_id, str(snapshot.path.resolve()))
+        self.store.mark_complete(job_id, str(cached.data_dir.resolve()))
         if Path(job["output_root"]).expanduser().resolve() == self.resolved_base_dir():
             self.scan_inventory(force=True)
 

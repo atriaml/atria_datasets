@@ -54,16 +54,18 @@ def prepare_dataset(
     dataset = config.build_module()
 
     cached = Cacher(FileStorageType.DELTALAKE, store_artifacts=False).cache(dataset)
-    print("cached", cached)
+    logger.info(f"Loaded dataset:\n{cached}")
 
-    for split, split_iterator in cached.split_iterators.items():
+    for split, split_iterator in dataset.split_iterators.items():
         print(f"{name}[{split.value}]: {len(split_iterator)} samples")
 
-        sample = split_iterator[0].load()
-        print(sample)
-
-        if visualize_samples:
-            visualize(sample, output_dir=f"{output_dir}/{name}/{split.value}")
+        for idx, sample in enumerate(split_iterator):
+            if sample.sample_id == "eng_NA_063":
+                print(sample.sample_id == "eng_NA_063", idx)
+                sample = sample.load()
+                if visualize_samples:
+                    visualize(sample, output_dir=f"{output_dir}/{name}/{split.value}")
+                break
 
 
 if __name__ == "__main__":

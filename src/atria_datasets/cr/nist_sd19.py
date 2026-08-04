@@ -12,7 +12,7 @@ from atria_core.types import (
 )
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
-from atria_datasets.htr._common import IMAGE_SUFFIXES, TextSidecarTransform
+from atria_datasets.htr._common import IMAGE_SUFFIXES, TextAnnotationTransform
 from atria_datasets.registry import datasets
 from atria_datasets.utils import require_manual_path
 
@@ -69,4 +69,4 @@ class NISTSD19(Dataset[NISTSD19Config, SinglePageDocumentInstance]):
         return iterator()
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
-        return TextSidecarTransform()
+        return TextAnnotationTransform()

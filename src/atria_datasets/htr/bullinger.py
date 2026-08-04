@@ -14,7 +14,7 @@ from atria_core.types import (
 from atria_core.types._generic._elements import OCRLevel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
-from atria_datasets.htr._common import TextSidecarTransform
+from atria_datasets.htr._common import TextAnnotationTransform
 from atria_datasets.registry import datasets
 from atria_datasets.utils import require_manual_path
 
@@ -70,4 +70,4 @@ class Bullinger(Dataset[BullingerConfig, SinglePageDocumentInstance]):
         return samples
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
-        return TextSidecarTransform(level=OCRLevel.line)
+        return TextAnnotationTransform(level=OCRLevel.line)
