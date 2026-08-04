@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, overload
 
 import numpy as np
 from atria_core.datasets import Dataset, DatasetConfig
 from atria_core.types import (
+    ClassificationAnnotation,
+    DatasetLabels,
     DatasetMetadata,
     DatasetSplitType,
     SinglePageDocumentInstance,
@@ -20,7 +23,12 @@ from atria_core.types._generic._image import Image
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import get_image_size
-from atria_datasets.parsers import IAMRecord, parse_iam_ascii, parse_iam_split
+from atria_datasets.parsers import (
+    IAMRecord,
+    parse_iam_ascii,
+    parse_iam_forms,
+    parse_iam_split,
+)
 from atria_datasets.registry import datasets
 from atria_datasets.utils import require_manual_path
 
@@ -32,19 +40,47 @@ _AACHEN_SPLITS = {
 }
 
 
+def _iam_root(data_dir: str | Path) -> Path:
+    data_dir = Path(data_dir)
+    for candidate in (data_dir / "iam", data_dir):
+        if (candidate / "ascii" / "forms.txt").is_file() and (
+            candidate / "forms"
+        ).is_dir():
+            return candidate
+    return require_manual_path(
+        data_dir,
+        "iam",
+        homepage=_HOMEPAGE,
+        instructions=(
+            "Extract forms/ and ascii/ there, and extract the OpenSLR 56 "
+            "Aachen split archive so iam/splits/*.uttlist exists."
+        ),
+    )
+
+
 @datasets.register("iam")
 @pydantic_dataclass(frozen=True)
 class IAMConfig(DatasetConfig):
     include_bad_segmentations: bool = False
+    crop_to_handwriting: bool = True
 
     def build_module(self, **kwargs: Any) -> IAM:
         return IAM(self, **kwargs)
 
 
-def _bbox(record: IAMRecord, width: int, height: int) -> np.ndarray:
+def _bbox(
+    record: IAMRecord, crop_box: tuple[int, int, int, int]
+) -> np.ndarray:
+    left, top, right, bottom = crop_box
+    width, height = right - left, bottom - top
     return np.clip(
         np.asarray(
-            [record.x, record.y, record.x + record.width, record.y + record.height],
+            [
+                record.x - left,
+                record.y - top,
+                record.x + record.width - left,
+                record.y + record.height - top,
+            ],
             dtype=np.float64,
         )
         / np.asarray([width, height, width, height]),
@@ -54,9 +90,10 @@ def _bbox(record: IAMRecord, width: int, height: int) -> np.ndarray:
 
 
 def _build_annotation(
-    image_path: Path, lines: list[IAMRecord], words_by_line: dict[str, list[IAMRecord]]
+    lines: list[IAMRecord],
+    words_by_line: dict[str, list[IAMRecord]],
+    crop_box: tuple[int, int, int, int],
 ) -> OCRAnnotation:
-    width, height = get_image_size(image_path)
     ids = [0]
     parent_ids = [-1]
     levels = [OCRLevel.page.value]
@@ -67,13 +104,13 @@ def _build_annotation(
         ids.append(line_index)
         parent_ids.append(0)
         levels.append(OCRLevel.line.value)
-        bboxes.append(_bbox(line, width, height))
+        bboxes.append(_bbox(line, crop_box))
         texts.append(line.text)
         for word in words_by_line.get(line.sample_id, []):
             ids.append(len(ids))
             parent_ids.append(line_index)
             levels.append(OCRLevel.word.value)
-            bboxes.append(_bbox(word, width, height))
+            bboxes.append(_bbox(word, crop_box))
             texts.append(word.text)
     annotation = OCRAnnotation(
         ids=np.asarray(ids),
@@ -86,13 +123,45 @@ def _build_annotation(
     return annotation
 
 
-class IAMSplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
+def _handwriting_crop(
+    lines: list[IAMRecord], width: int, height: int
+) -> tuple[int, int, int, int]:
+    return (
+        max(0, min(line.x for line in lines)),
+        max(0, min(line.y for line in lines)),
+        min(width, max(line.x + line.width for line in lines)),
+        min(height, max(line.y + line.height for line in lines)),
+    )
+
+
+@dataclass(frozen=True)
+class IAMFormSample:
+    image_path: Path
+    annotation: OCRAnnotation
+    writer_id: str
+    writer_label: int
+    crop_box: tuple[int, int, int, int] | None
+
+
+class IAMSplitIterator(Sequence[IAMFormSample]):
     def __init__(
-        self, root: Path, split: DatasetSplitType, include_bad_segmentations: bool
+        self,
+        root: Path,
+        split: DatasetSplitType,
+        include_bad_segmentations: bool,
+        crop_to_handwriting: bool,
     ) -> None:
+        forms = parse_iam_forms(root / "ascii" / "forms.txt")
         lines = parse_iam_ascii(root / "ascii" / "lines.txt")
         words = parse_iam_ascii(root / "ascii" / "words.txt")
         form_ids = parse_iam_split(root / "splits" / _AACHEN_SPLITS[split])
+        writer_ids = sorted({form.writer_id for form in forms.values()})
+        writer_labels = {
+            writer_id: label for label, writer_id in enumerate(writer_ids)
+        }
+        image_paths = {
+            path.stem: path for path in (root / "forms").rglob("*.png")
+        }
         lines_by_form: dict[str, list[IAMRecord]] = defaultdict(list)
         words_by_line: dict[str, list[IAMRecord]] = defaultdict(list)
         for record in lines.values():
@@ -102,21 +171,38 @@ class IAMSplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
             if include_bad_segmentations or record.segmentation_status == "ok":
                 words_by_line[record.line_id].append(record)
 
-        self.samples: list[tuple[Path, OCRAnnotation]] = []
+        self.samples: list[IAMFormSample] = []
         for form_id in sorted(form_ids):
             form_lines = sorted(
                 lines_by_form.get(form_id, []), key=lambda item: item.sample_id
             )
-            image_path = root / "forms" / f"{form_id}.png"
-            if image_path.exists() and form_lines:
-                annotation = _build_annotation(image_path, form_lines, words_by_line)
-                self.samples.append((image_path, annotation))
+            image_path = image_paths.get(form_id)
+            form = forms.get(form_id)
+            if image_path is not None and form is not None and form_lines:
+                width, height = get_image_size(image_path)
+                annotation_box = (
+                    _handwriting_crop(form_lines, width, height)
+                    if crop_to_handwriting
+                    else (0, 0, width, height)
+                )
+                annotation = _build_annotation(
+                    form_lines, words_by_line, annotation_box
+                )
+                self.samples.append(
+                    IAMFormSample(
+                        image_path=image_path,
+                        annotation=annotation,
+                        writer_id=form.writer_id,
+                        writer_label=writer_labels[form.writer_id],
+                        crop_box=annotation_box if crop_to_handwriting else None,
+                    )
+                )
 
     @overload
-    def __getitem__(self, index: int) -> tuple[Path, OCRAnnotation]: ...
+    def __getitem__(self, index: int) -> IAMFormSample: ...
 
     @overload
-    def __getitem__(self, index: slice) -> Sequence[tuple[Path, OCRAnnotation]]: ...
+    def __getitem__(self, index: slice) -> Sequence[IAMFormSample]: ...
 
     def __getitem__(self, index: int | slice) -> Any:
         return self.samples[index]
@@ -126,38 +212,39 @@ class IAMSplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
 
 
 class IAMInputTransform:
-    def __call__(
-        self, sample: tuple[Path, OCRAnnotation]
-    ) -> SinglePageDocumentInstance:
-        image_path, annotation = sample
-        return SinglePageDocumentInstance(
-            sample_id=image_path.stem, visual=Image(file_path=str(image_path))
-        ).add_annotation(annotation)
+    def __call__(self, sample: IAMFormSample) -> SinglePageDocumentInstance:
+        instance = SinglePageDocumentInstance(
+            sample_id=sample.image_path.stem,
+            visual=Image(file_path=str(sample.image_path), crop_box=sample.crop_box),
+        ).add_annotation(sample.annotation)
+        return instance.add_annotation(
+            ClassificationAnnotation(
+                label_value=sample.writer_label,
+                label_name=sample.writer_id,
+            )
+        )
 
 
 class IAM(Dataset[IAMConfig, SinglePageDocumentInstance]):
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
-        root = require_manual_path(
-            data_dir,
-            "iam",
-            homepage=_HOMEPAGE,
-            instructions=(
-                "Extract forms/ and ascii/ there, and extract the OpenSLR 56 "
-                "Aachen split archive so iam/splits/*.uttlist exists."
-            ),
-        )
+        root = _iam_root(data_dir)
         return {"iam": root}
 
     def _metadata(self) -> DatasetMetadata:
+        forms = parse_iam_forms(_iam_root(self.data_dir) / "ascii" / "forms.txt")
         return DatasetMetadata(
             description=(
-                "IAM offline English handwriting database with page, line, and "
-                "word annotations and the Aachen split."
+                "IAM offline English handwriting database cropped to the "
+                "ground-truth handwriting extent, with writer identities, page, "
+                "line, and word annotations, and the Aachen split."
             ),
             homepage=_HOMEPAGE,
             license="CC BY-NC-SA 4.0",
+            dataset_labels=DatasetLabels(
+                classification=sorted({form.writer_id for form in forms.values()})
+            ),
         )
 
     def _available_splits(self, data_dir: str) -> list[DatasetSplitType]:
@@ -167,7 +254,10 @@ class IAM(Dataset[IAMConfig, SinglePageDocumentInstance]):
         self, split: DatasetSplitType, data_dir: str
     ) -> IAMSplitIterator:
         return IAMSplitIterator(
-            Path(data_dir) / "iam", split, self.config.include_bad_segmentations
+            _iam_root(data_dir),
+            split,
+            self.config.include_bad_segmentations,
+            self.config.crop_to_handwriting,
         )
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
