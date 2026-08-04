@@ -19,10 +19,13 @@ from typing import Any
 
 import fire
 from atria_core.datasets import Cacher, FileStorageType
+from atria_core.logger import get_logger
 from atria_core.visualizers import visualize
 
 import atria_datasets  # noqa: F401  (populates the registry on import)
 from atria_datasets.registry import datasets
+
+logger = get_logger(__name__)
 
 
 def prepare_dataset(
@@ -40,6 +43,7 @@ def prepare_dataset(
         **config_kwargs: Extra kwargs forwarded to the dataset's config,
             e.g. --level=word for scadsai_german_handwriting.
     """
+    logger.info(f"Loading dataset {name}...")
     available = sorted(datasets.list())
     if name not in available:
         raise SystemExit(
@@ -49,7 +53,8 @@ def prepare_dataset(
     config = datasets.get(name)(**config_kwargs)
     dataset = config.build_module()
 
-    cached = Cacher(FileStorageType.MSGPACK).cache(dataset)
+    cached = Cacher(FileStorageType.DELTALAKE, store_artifacts=False).cache(dataset)
+    print("cached", cached)
 
     for split, split_iterator in cached.split_iterators.items():
         print(f"{name}[{split.value}]: {len(split_iterator)} samples")
