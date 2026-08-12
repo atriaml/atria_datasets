@@ -25,6 +25,7 @@ class InputTransform:
             question_text=sample["question"],
             answer_text=answers["text"][0],
             start=answers["answer_start"][0] if answers["answer_start"] else None,
+            alternative_answers=list(answers["text"]),
         )
         return TextInstance(
             sample_id=sample["id"], text=sample["context"]

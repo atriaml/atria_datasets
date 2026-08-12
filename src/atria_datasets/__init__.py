@@ -20,3 +20,4 @@ from .htr.scads_german import ScaDSAIConfig  # noqa: F401
 from .htr.scads_german_fullpage import ScaDSAIFullPageConfig  # noqa: F401
 from .htr.stabs_ratsbuecher import StABSRatsbuecherConfig  # noqa: F401
 from .qa.squad import SquadConfig  # noqa: F401
+from .qa.textvqa import TextVqaConfig  # noqa: F401
