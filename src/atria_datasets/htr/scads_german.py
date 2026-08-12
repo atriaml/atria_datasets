@@ -52,13 +52,13 @@ def _row_text(row: dict[str, str], ocr_level: OCRLevel) -> str:
     raise ValueError(f"Missing transcription field for {ocr_level.name} sample: {row}")
 
 
-@datasets.register("scadsai_german_handwriting")
+@datasets.register(name="scadsai_german_handwriting")
 @pydantic_dataclass(frozen=True)
 class ScaDSAIConfig(DatasetConfig):
     level: OCRLevel = OCRLevel.line
 
     def build_module(self, **kwargs: Any) -> ScaDSAI:
-        return ScaDSAI(self, **kwargs)
+        return ScaDSAI(config=self, **kwargs)
 
 
 class SplitIterator(Sequence[tuple[Path, str]]):
@@ -81,7 +81,7 @@ class SplitIterator(Sequence[tuple[Path, str]]):
                 image_key = (
                     row["line_file"] if ocr_level == OCRLevel.line else row["word_file"]
                 )
-                text = _row_text(row, ocr_level)
+                text = _row_text(row=row, ocr_level=ocr_level)
 
                 image_path = image_dir / image_key
 
@@ -108,7 +108,9 @@ class InputTransform:
 
         return SinglePageDocumentInstance(
             sample_id=image_path.stem, visual=Image(file_path=str(image_path))
-        ).add_annotation(TranscriptionAnnotation(text=text, level=self.ocr_level))
+        ).add_annotation(
+            annotation=TranscriptionAnnotation(text=text, level=self.ocr_level)
+        )
 
 
 class ScaDSAI(Dataset[ScaDSAIConfig, SinglePageDocumentInstance]):

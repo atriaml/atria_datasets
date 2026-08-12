@@ -26,11 +26,11 @@ _ARCHIVE_NAME = "cvl-database-1-1"
 _URLS = [UrlSpec(url=f"{_HOMEPAGE}/files/{_ARCHIVE_NAME}.zip", url_ext=".zip")]
 
 
-@datasets.register("cvl")
+@datasets.register(name="cvl")
 @pydantic_dataclass(frozen=True)
 class CVLConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> CVL:
-        return CVL(self, **kwargs)
+        return CVL(config=self, **kwargs)
 
 
 def _dataset_root(data_dir: str | Path) -> Path:
@@ -69,10 +69,11 @@ class CVLWordIterator(Sequence[CVLWordSample]):
     """Load the official word crops whose filenames contain their transcript."""
 
     def __init__(self, data_dir: str, split: DatasetSplitType) -> None:
-        root = _dataset_root(data_dir)
+        root = _dataset_root(data_dir=data_dir)
         split_dir = root / f"{split.value}set" / "words"
         writer_labels = {
-            writer_id: label for label, writer_id in enumerate(_writer_ids(root))
+            writer_id: label
+            for label, writer_id in enumerate(_writer_ids(root=root))
         }
 
         self.samples: list[CVLWordSample] = []
@@ -108,10 +109,12 @@ class CVLWordTransform:
             sample_id=sample.image_path.stem,
             visual=Image(file_path=str(sample.image_path)),
         ).add_annotation(
-            TranscriptionAnnotation(text=sample.transcription, level=OCRLevel.word)
+            annotation=TranscriptionAnnotation(
+                text=sample.transcription, level=OCRLevel.word
+            )
         )
         return instance.add_annotation(
-            ClassificationAnnotation(
+            annotation=ClassificationAnnotation(
                 label_value=sample.writer_label,
                 label_name=sample.writer_id,
             )
@@ -137,7 +140,7 @@ class CVL(Dataset[CVLConfig, SinglePageDocumentInstance]):
                 "ICDAR 2013, pp. 560-564."
             ),
             dataset_labels=DatasetLabels(
-                classification=_writer_ids(_dataset_root(self.data_dir))
+                classification=_writer_ids(root=_dataset_root(data_dir=self.data_dir))
             ),
         )
 
@@ -147,7 +150,7 @@ class CVL(Dataset[CVLConfig, SinglePageDocumentInstance]):
     def _build_split_iterator(
         self, split: DatasetSplitType, data_dir: str
     ) -> CVLWordIterator:
-        return CVLWordIterator(data_dir, split)
+        return CVLWordIterator(data_dir=data_dir, split=split)
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return CVLWordTransform()

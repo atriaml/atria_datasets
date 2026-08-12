@@ -17,11 +17,11 @@ from atria_datasets.htr._common import TextAnnotationTransform, TextFileIterator
 from atria_datasets.registry import datasets
 
 
-@datasets.register("scadsai_german_fullpage")
+@datasets.register(name="scadsai_german_fullpage")
 @pydantic_dataclass(frozen=True)
 class ScaDSAIFullPageConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> ScaDSAIFullPage:
-        return ScaDSAIFullPage(self, **kwargs)
+        return ScaDSAIFullPage(config=self, **kwargs)
 
 
 class ScaDSAIFullPage(Dataset[ScaDSAIFullPageConfig, SinglePageDocumentInstance]):
@@ -46,7 +46,7 @@ class ScaDSAIFullPage(Dataset[ScaDSAIFullPageConfig, SinglePageDocumentInstance]
     def _build_split_iterator(
         self, split: DatasetSplitType, data_dir: str
     ) -> TextFileIterator:
-        return TextFileIterator(data_dir)
+        return TextFileIterator(root=data_dir)
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return TextAnnotationTransform(level=OCRLevel.page)

@@ -11,11 +11,11 @@ from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 from atria_datasets.registry import datasets
 
 
-@datasets.register("austrian_newspapers")
+@datasets.register(name="austrian_newspapers")
 @pydantic_dataclass(frozen=True)
 class AustrianNewspapersConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> AustrianNewspapers:
-        return AustrianNewspapers(self, **kwargs)
+        return AustrianNewspapers(config=self, **kwargs)
 
 
 class AustrianNewspapers(PageXMLDataset):

@@ -50,11 +50,11 @@ _SPLIT_LAYOUT: dict[DatasetSplitType, tuple[str, bool]] = {
 }
 
 
-@datasets.register("read_bozen")
+@datasets.register(name="read_bozen")
 @pydantic_dataclass(frozen=True)
 class ReadBozenConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> ReadBozen:
-        return ReadBozen(self, **kwargs)
+        return ReadBozen(config=self, **kwargs)
 
 
 class SplitIterator(Sequence[tuple[Path, Path]]):
@@ -93,11 +93,11 @@ class InputTransform:
     def __call__(self, sample: tuple[Path, Path]) -> SinglePageDocumentInstance:
         image_path, xml_path = sample
 
-        annotation = parse_page_xml(xml_path)
+        annotation = parse_page_xml(xml_path=xml_path)
 
         return SinglePageDocumentInstance(
             sample_id=image_path.stem, visual=Image(file_path=str(image_path))
-        ).add_annotation(annotation)
+        ).add_annotation(annotation=annotation)
 
 
 class ReadBozen(Dataset[ReadBozenConfig, SinglePageDocumentInstance]):

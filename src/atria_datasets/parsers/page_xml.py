@@ -27,7 +27,7 @@ def _parse_xml(xml_path: Path) -> etree._Element:
     xml = xml_path.read_bytes()
     if _BARE_AMPERSAND.search(xml):
         xml = _BARE_AMPERSAND.sub(b"&amp;", xml)
-    return etree.fromstring(xml)
+    return etree.fromstring(text=xml)
 
 
 def _parse_points(points: str) -> np.ndarray:
@@ -37,18 +37,18 @@ def _parse_points(points: str) -> np.ndarray:
 
 
 def _coords(element: etree._Element, ns: dict[str, str]) -> np.ndarray | None:
-    coords_el = element.find("pc:Coords", ns)
+    coords_el = element.find(path="pc:Coords", namespaces=ns)
     if coords_el is None or not coords_el.get("points"):
         return None
-    return _parse_points(coords_el.get("points"))
+    return _parse_points(points=coords_el.get("points"))
 
 
 def _text(element: etree._Element, ns: dict[str, str]) -> str:
     """First (or index="0") <TextEquiv><Unicode> under `element`."""
-    text_equiv = element.find("pc:TextEquiv", ns)
+    text_equiv = element.find(path="pc:TextEquiv", namespaces=ns)
     if text_equiv is None:
         return ""
-    unicode_el = text_equiv.find("pc:Unicode", ns)
+    unicode_el = text_equiv.find(path="pc:Unicode", namespaces=ns)
     return (unicode_el.text or "").strip() if unicode_el is not None else ""
 
 
@@ -56,10 +56,10 @@ def _reading_order(page: etree._Element, ns: dict[str, str]) -> list[str] | None
     """Region ids from <ReadingOrder>/<OrderedGroup>, ascending by `index`,
     or None if the file has no reading-order element (caller falls back to
     document order)."""
-    reading_order = page.find("pc:ReadingOrder", ns)
+    reading_order = page.find(path="pc:ReadingOrder", namespaces=ns)
     if reading_order is None:
         return None
-    refs = reading_order.findall(".//pc:RegionRefIndexed", ns)
+    refs = reading_order.findall(path=".//pc:RegionRefIndexed", namespaces=ns)
     if not refs:
         return None
     ordered = sorted(refs, key=lambda r: int(r.get("index", 0)))
@@ -82,11 +82,15 @@ def parse_page_xml(
     TextLine, Word, Coords, TextEquiv, Unicode, ReadingOrder,
     RegionRefIndexed) are stable across all of them.
     """
-    root = _parse_xml(xml_path)
+    root = _parse_xml(xml_path=xml_path)
     ns_uri = etree.QName(root).namespace
     ns = {"pc": ns_uri} if ns_uri else {}
 
-    page = root.find("pc:Page", ns) if ns_uri else root.find("Page")
+    page = (
+        root.find(path="pc:Page", namespaces=ns)
+        if ns_uri
+        else root.find(path="Page")
+    )
     if page is None:
         raise ValueError(f"No <Page> element found in {xml_path}")
 
@@ -137,10 +141,14 @@ def parse_page_xml(
         polygons.append(norm_polygon)
         return element_id
 
-    page_id = _add(OCRLevel.page, _ROOT_PARENT, None, "")
+    page_id = _add(
+        level=OCRLevel.page, parent_id=_ROOT_PARENT, polygon_px=None, text=""
+    )
 
-    regions = {r.get("id"): r for r in page.findall("pc:TextRegion", ns)}
-    ordered_ids = _reading_order(page, ns)
+    regions = {
+        r.get("id"): r for r in page.findall(path="pc:TextRegion", namespaces=ns)
+    }
+    ordered_ids = _reading_order(page=page, ns=ns)
     if ordered_ids:
         ordered_regions = [regions[rid] for rid in ordered_ids if rid in regions]
         ordered_regions += [
@@ -151,12 +159,25 @@ def parse_page_xml(
 
     for region in ordered_regions:
         region_id = _add(
-            OCRLevel.block, page_id, _coords(region, ns), _text(region, ns)
+            level=OCRLevel.block,
+            parent_id=page_id,
+            polygon_px=_coords(element=region, ns=ns),
+            text=_text(element=region, ns=ns),
         )
-        for line in region.findall("pc:TextLine", ns):
-            line_id = _add(OCRLevel.line, region_id, _coords(line, ns), _text(line, ns))
-            for word in line.findall("pc:Word", ns):
-                _add(OCRLevel.word, line_id, _coords(word, ns), _text(word, ns))
+        for line in region.findall(path="pc:TextLine", namespaces=ns):
+            line_id = _add(
+                level=OCRLevel.line,
+                parent_id=region_id,
+                polygon_px=_coords(element=line, ns=ns),
+                text=_text(element=line, ns=ns),
+            )
+            for word in line.findall(path="pc:Word", namespaces=ns):
+                _add(
+                    level=OCRLevel.word,
+                    parent_id=line_id,
+                    polygon_px=_coords(element=word, ns=ns),
+                    text=_text(element=word, ns=ns),
+                )
 
     # Prefer aligned line text. Weakly annotated PAGE releases may instead
     # store one transcript on each region or directly on the page.
@@ -170,7 +191,7 @@ def parse_page_xml(
         for level, text in zip(levels, texts, strict=True)
         if level == OCRLevel.block.value and text
     )
-    texts[page_id] = line_text or region_text or _text(page, ns)
+    texts[page_id] = line_text or region_text or _text(element=page, ns=ns)
 
     lengths = np.array([0 if p is None else len(p) for p in polygons])
     p_max = int(lengths.max()) if len(lengths) else 0

@@ -20,13 +20,13 @@ from atria_datasets.utils import require_manual_path
 _HOMEPAGE = "https://fki.tic.heia-fr.ch/databases/iam-historical-document-database"
 
 
-@datasets.register("iam_histdb")
+@datasets.register(name="iam_histdb")
 @pydantic_dataclass(frozen=True)
 class IAMHistDBConfig(DatasetConfig):
     collection: Literal["washington", "parzival", "saint_gall"] = "washington"
 
     def build_module(self, **kwargs: Any) -> IAMHistDB:
-        return IAMHistDB(self, **kwargs)
+        return IAMHistDB(config=self, **kwargs)
 
 
 class IAMHistDB(Dataset[IAMHistDBConfig, SinglePageDocumentInstance]):
@@ -34,8 +34,8 @@ class IAMHistDB(Dataset[IAMHistDBConfig, SinglePageDocumentInstance]):
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
         root = require_manual_path(
-            data_dir,
-            f"iam_histdb/{self.config.collection}",
+            data_dir=data_dir,
+            expected_path=f"iam_histdb/{self.config.collection}",
             homepage=_HOMEPAGE,
             instructions="Extract the registered dataset, preserving paired line-image and .txt transcription names.",
         )
@@ -55,7 +55,7 @@ class IAMHistDB(Dataset[IAMHistDBConfig, SinglePageDocumentInstance]):
         self, split: DatasetSplitType, data_dir: str
     ) -> TextFileIterator:
         return TextFileIterator(
-            Path(data_dir) / "iam_histdb" / self.config.collection
+            root=Path(data_dir) / "iam_histdb" / self.config.collection
         )
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:

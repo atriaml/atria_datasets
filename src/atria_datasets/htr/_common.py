@@ -21,7 +21,7 @@ def get_image_size(
     image_path: str | Path, *, exif_rotation: bool = False
 ) -> tuple[int, int]:
     """Read dimensions from an image header without decoding its pixels."""
-    width, height = imagesize.get(image_path, exif_rotation=exif_rotation)
+    width, height = imagesize.get(filepath=image_path, exif_rotation=exif_rotation)
     if width <= 0 or height <= 0:
         raise ValueError(f"Could not read image dimensions from {image_path}")
     return width, height
@@ -37,7 +37,7 @@ def _is_archive_artifact(path: Path) -> bool:
 
 def _page_image_info(xml_path: Path) -> tuple[bool, str | None]:
     """Detect PAGE XML and read imageFilename without parsing it completely."""
-    elements = etree.iterparse(str(xml_path), events=("start",))
+    elements = etree.iterparse(source=str(xml_path), events=("start",))
     try:
         _, root = next(elements)
     except StopIteration:
@@ -67,7 +67,7 @@ class PageXMLIterator(Sequence[tuple[Path, Path]]):
             if (
                 path.is_file()
                 and path.suffix.lower() in IMAGE_SUFFIXES
-                and not _is_archive_artifact(path)
+                and not _is_archive_artifact(path=path)
             ):
                 images.setdefault(path.name.lower(), []).append(path)
                 images.setdefault(path.stem.lower(), []).append(path)
@@ -75,11 +75,11 @@ class PageXMLIterator(Sequence[tuple[Path, Path]]):
         self.samples: list[tuple[Path, Path]] = []
         paired_images: set[Path] = set()
         for xml_path in sorted(root.rglob("*.xml")):
-            if _is_archive_artifact(xml_path) or not _split_matches(
-                xml_path, split_aliases
+            if _is_archive_artifact(path=xml_path) or not _split_matches(
+                path=xml_path, aliases=split_aliases
             ):
                 continue
-            is_page_xml, image_name = _page_image_info(xml_path)
+            is_page_xml, image_name = _page_image_info(xml_path=xml_path)
             if not is_page_xml:
                 continue
             keys = []
@@ -122,11 +122,13 @@ class PageXMLIterator(Sequence[tuple[Path, Path]]):
 class PageXMLTransform:
     def __call__(self, sample: tuple[Path, Path]) -> SinglePageDocumentInstance:
         image_path, xml_path = sample
-        annotation = parse_page_xml(xml_path, image_size=get_image_size(image_path))
+        annotation = parse_page_xml(
+            xml_path=xml_path, image_size=get_image_size(image_path=image_path)
+        )
         return SinglePageDocumentInstance(
-            sample_id=_path_sample_id(image_path),
+            sample_id=_path_sample_id(path=image_path),
             visual=Image(file_path=str(image_path)),
-        ).add_annotation(annotation)
+        ).add_annotation(annotation=annotation)
 
 
 class TextFileIterator(Sequence[tuple[Path, str]]):
@@ -168,6 +170,8 @@ class TextAnnotationTransform:
 
         image_path, text = sample
         return SinglePageDocumentInstance(
-            sample_id=_path_sample_id(image_path),
+            sample_id=_path_sample_id(path=image_path),
             visual=Image(file_path=str(image_path)),
-        ).add_annotation(TranscriptionAnnotation(text=text, level=self.level))
+        ).add_annotation(
+            annotation=TranscriptionAnnotation(text=text, level=self.level)
+        )

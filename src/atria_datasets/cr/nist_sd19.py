@@ -19,11 +19,11 @@ from atria_datasets.utils import require_manual_path
 _HOMEPAGE = "https://www.nist.gov/srd/nist-special-database-19"
 
 
-@datasets.register("nist_sd19")
+@datasets.register(name="nist_sd19")
 @pydantic_dataclass(frozen=True)
 class NISTSD19Config(DatasetConfig):
     def build_module(self, **kwargs: Any) -> NISTSD19:
-        return NISTSD19(self, **kwargs)
+        return NISTSD19(config=self, **kwargs)
 
 
 def _class_name(directory: str) -> str:
@@ -39,8 +39,8 @@ class NISTSD19(Dataset[NISTSD19Config, SinglePageDocumentInstance]):
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
         root = require_manual_path(
-            data_dir,
-            "by_class",
+            data_dir=data_dir,
+            expected_path="by_class",
             homepage=_HOMEPAGE,
             instructions="Obtain the licensed second-edition by_class.zip from NIST and extract it here.",
         )
@@ -64,7 +64,7 @@ class NISTSD19(Dataset[NISTSD19Config, SinglePageDocumentInstance]):
         def iterator() -> Iterable[tuple[Path, str]]:
             for path in root.rglob("*"):
                 if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES:
-                    yield path, _class_name(path.relative_to(root).parts[0])
+                    yield path, _class_name(directory=path.relative_to(root).parts[0])
 
         return iterator()
 

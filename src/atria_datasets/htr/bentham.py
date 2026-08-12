@@ -11,11 +11,11 @@ from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 from atria_datasets.registry import datasets
 
 
-@datasets.register("bentham")
+@datasets.register(name="bentham")
 @pydantic_dataclass(frozen=True)
 class BenthamConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> Bentham:
-        return Bentham(self, **kwargs)
+        return Bentham(config=self, **kwargs)
 
 
 class Bentham(PageXMLDataset):

@@ -26,11 +26,11 @@ _TSV = {
 }
 
 
-@datasets.register("bullinger")
+@datasets.register(name="bullinger")
 @pydantic_dataclass(frozen=True)
 class BullingerConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> Bullinger:
-        return Bullinger(self, **kwargs)
+        return Bullinger(config=self, **kwargs)
 
 
 class Bullinger(Dataset[BullingerConfig, SinglePageDocumentInstance]):
@@ -38,8 +38,8 @@ class Bullinger(Dataset[BullingerConfig, SinglePageDocumentInstance]):
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
         root = require_manual_path(
-            data_dir,
-            "bullinger",
+            data_dir=data_dir,
+            expected_path="bullinger",
             homepage=_HOMEPAGE,
             instructions="Download the ground-truth TSV files and line images using the upstream bullinger-htr instructions.",
         )

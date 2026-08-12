@@ -14,13 +14,13 @@ from atria_datasets.registry import datasets
 _DTA_MARKERS = ("libelt", "hufeland", "erbkam", "auerbach")
 
 
-@datasets.register("german_kurrent_19c")
+@datasets.register(name="german_kurrent_19c")
 @pydantic_dataclass(frozen=True)
 class GermanKurrent19CConfig(DatasetConfig):
     license_subset: Literal["cc_by_only", "all"] = "cc_by_only"
 
     def build_module(self, **kwargs: Any) -> GermanKurrent19C:
-        return GermanKurrent19C(self, **kwargs)
+        return GermanKurrent19C(config=self, **kwargs)
 
 
 class GermanKurrent19C(PageXMLDataset):
@@ -43,7 +43,7 @@ class GermanKurrent19C(PageXMLDataset):
     def _build_split_iterator(
         self, split: DatasetSplitType, data_dir: str
     ) -> PageXMLIterator:
-        iterator = super()._build_split_iterator(split, data_dir)
+        iterator = super()._build_split_iterator(split=split, data_dir=data_dir)
         if self.config.license_subset == "cc_by_only":
             iterator.samples = [
                 sample

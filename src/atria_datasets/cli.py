@@ -32,7 +32,7 @@ def registry_build() -> None:
     """Dump the dataset registry to registry.json."""
     # importing atria_datasets (this module's parent package) already ran
     # every @datasets.register(...) -- just dump what's in the registry now.
-    RegistryStore.dump(_REGISTRY_PATH, datasets.to_dict())
+    RegistryStore.dump(path=_REGISTRY_PATH, data=datasets.to_dict())
     logger.info(f"Wrote {len(datasets.list())} dataset(s) to {_REGISTRY_PATH}")
 
 

@@ -41,7 +41,9 @@ class PageXMLDataset(Dataset[DatasetConfig, SinglePageDocumentInstance]):
     def _build_split_iterator(
         self, split: DatasetSplitType, data_dir: str
     ) -> PageXMLIterator:
-        return PageXMLIterator(Path(data_dir), split_aliases=self.split_aliases[split])
+        return PageXMLIterator(
+            root=Path(data_dir), split_aliases=self.split_aliases[split]
+        )
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return PageXMLTransform()

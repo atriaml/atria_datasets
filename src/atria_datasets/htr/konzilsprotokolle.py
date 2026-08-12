@@ -10,11 +10,11 @@ from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 from atria_datasets.registry import datasets
 
 
-@datasets.register("read_konzilsprotokolle")
+@datasets.register(name="read_konzilsprotokolle")
 @pydantic_dataclass(frozen=True)
 class KonzilsprotokolleConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> Konzilsprotokolle:
-        return Konzilsprotokolle(self, **kwargs)
+        return Konzilsprotokolle(config=self, **kwargs)
 
 
 class Konzilsprotokolle(PageXMLDataset):

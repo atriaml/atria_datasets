@@ -10,11 +10,11 @@ from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 from atria_datasets.registry import datasets
 
 
-@datasets.register("stabs_ratsbuecher_o10")
+@datasets.register(name="stabs_ratsbuecher_o10")
 @pydantic_dataclass(frozen=True)
 class StABSRatsbuecherConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> StABSRatsbuecher:
-        return StABSRatsbuecher(self, **kwargs)
+        return StABSRatsbuecher(config=self, **kwargs)
 
 
 class StABSRatsbuecher(PageXMLDataset):

@@ -11,11 +11,11 @@ from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 from atria_datasets.registry import datasets
 
 
-@datasets.register("icdar2017_read_htr_a")
+@datasets.register(name="icdar2017_read_htr_a")
 @pydantic_dataclass(frozen=True)
 class ICDAR2017ReadHTRAConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> ICDAR2017ReadHTRA:
-        return ICDAR2017ReadHTRA(self, **kwargs)
+        return ICDAR2017ReadHTRA(config=self, **kwargs)
 
 
 class ICDAR2017ReadHTRA(PageXMLDataset):
@@ -45,11 +45,11 @@ class ICDAR2017ReadHTRA(PageXMLDataset):
     }
 
 
-@datasets.register("icdar2017_read_htr_b")
+@datasets.register(name="icdar2017_read_htr_b")
 @pydantic_dataclass(frozen=True)
 class ICDAR2017ReadHTRBConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> ICDAR2017ReadHTRB:
-        return ICDAR2017ReadHTRB(self, **kwargs)
+        return ICDAR2017ReadHTRB(config=self, **kwargs)
 
 
 class ICDAR2017ReadHTRB(PageXMLDataset):

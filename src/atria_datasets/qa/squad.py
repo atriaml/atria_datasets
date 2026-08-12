@@ -10,7 +10,7 @@ from pydantic.dataclasses import dataclass as pydantic_dataclass
 from atria_datasets.registry import datasets
 
 
-@datasets.register("squad")
+@datasets.register(name="squad")
 @pydantic_dataclass(frozen=True)
 class SquadConfig(HuggingfaceDatasetConfig):
     def build_module(self, **kwargs: Any) -> Squad:
@@ -28,7 +28,7 @@ class InputTransform:
         )
         return TextInstance(
             sample_id=sample["id"], text=sample["context"]
-        ).add_annotation(QuestionAnsweringAnnotation(qa_pairs=[qa_pair]))
+        ).add_annotation(annotation=QuestionAnsweringAnnotation(qa_pairs=[qa_pair]))
 
 
 class Squad(HuggingfaceDataset[SquadConfig, TextInstance]):

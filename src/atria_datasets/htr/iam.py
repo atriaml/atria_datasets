@@ -48,8 +48,8 @@ def _iam_root(data_dir: str | Path) -> Path:
         ).is_dir():
             return candidate
     return require_manual_path(
-        data_dir,
-        "iam",
+        data_dir=data_dir,
+        expected_path="iam",
         homepage=_HOMEPAGE,
         instructions=(
             "Extract forms/ and ascii/ there, and extract the OpenSLR 56 "
@@ -58,14 +58,14 @@ def _iam_root(data_dir: str | Path) -> Path:
     )
 
 
-@datasets.register("iam")
+@datasets.register(name="iam")
 @pydantic_dataclass(frozen=True)
 class IAMConfig(DatasetConfig):
     include_bad_segmentations: bool = False
     crop_to_handwriting: bool = True
 
     def build_module(self, **kwargs: Any) -> IAM:
-        return IAM(self, **kwargs)
+        return IAM(config=self, **kwargs)
 
 
 def _bbox(
@@ -104,13 +104,13 @@ def _build_annotation(
         ids.append(line_index)
         parent_ids.append(0)
         levels.append(OCRLevel.line.value)
-        bboxes.append(_bbox(line, crop_box))
+        bboxes.append(_bbox(record=line, crop_box=crop_box))
         texts.append(line.text)
         for word in words_by_line.get(line.sample_id, []):
             ids.append(len(ids))
             parent_ids.append(line_index)
             levels.append(OCRLevel.word.value)
-            bboxes.append(_bbox(word, crop_box))
+            bboxes.append(_bbox(record=word, crop_box=crop_box))
             texts.append(word.text)
     annotation = OCRAnnotation(
         ids=np.asarray(ids),
@@ -151,10 +151,10 @@ class IAMSplitIterator(Sequence[IAMFormSample]):
         include_bad_segmentations: bool,
         crop_to_handwriting: bool,
     ) -> None:
-        forms = parse_iam_forms(root / "ascii" / "forms.txt")
-        lines = parse_iam_ascii(root / "ascii" / "lines.txt")
-        words = parse_iam_ascii(root / "ascii" / "words.txt")
-        form_ids = parse_iam_split(root / "splits" / _AACHEN_SPLITS[split])
+        forms = parse_iam_forms(path=root / "ascii" / "forms.txt")
+        lines = parse_iam_ascii(path=root / "ascii" / "lines.txt")
+        words = parse_iam_ascii(path=root / "ascii" / "words.txt")
+        form_ids = parse_iam_split(path=root / "splits" / _AACHEN_SPLITS[split])
         writer_ids = sorted({form.writer_id for form in forms.values()})
         writer_labels = {
             writer_id: label for label, writer_id in enumerate(writer_ids)
@@ -179,14 +179,16 @@ class IAMSplitIterator(Sequence[IAMFormSample]):
             image_path = image_paths.get(form_id)
             form = forms.get(form_id)
             if image_path is not None and form is not None and form_lines:
-                width, height = get_image_size(image_path)
+                width, height = get_image_size(image_path=image_path)
                 annotation_box = (
-                    _handwriting_crop(form_lines, width, height)
+                    _handwriting_crop(lines=form_lines, width=width, height=height)
                     if crop_to_handwriting
                     else (0, 0, width, height)
                 )
                 annotation = _build_annotation(
-                    form_lines, words_by_line, annotation_box
+                    lines=form_lines,
+                    words_by_line=words_by_line,
+                    crop_box=annotation_box,
                 )
                 self.samples.append(
                     IAMFormSample(
@@ -216,9 +218,9 @@ class IAMInputTransform:
         instance = SinglePageDocumentInstance(
             sample_id=sample.image_path.stem,
             visual=Image(file_path=str(sample.image_path), crop_box=sample.crop_box),
-        ).add_annotation(sample.annotation)
+        ).add_annotation(annotation=sample.annotation)
         return instance.add_annotation(
-            ClassificationAnnotation(
+            annotation=ClassificationAnnotation(
                 label_value=sample.writer_label,
                 label_name=sample.writer_id,
             )
@@ -229,11 +231,13 @@ class IAM(Dataset[IAMConfig, SinglePageDocumentInstance]):
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
-        root = _iam_root(data_dir)
+        root = _iam_root(data_dir=data_dir)
         return {"iam": root}
 
     def _metadata(self) -> DatasetMetadata:
-        forms = parse_iam_forms(_iam_root(self.data_dir) / "ascii" / "forms.txt")
+        forms = parse_iam_forms(
+            path=_iam_root(data_dir=self.data_dir) / "ascii" / "forms.txt"
+        )
         return DatasetMetadata(
             description=(
                 "IAM offline English handwriting database cropped to the "
@@ -254,10 +258,10 @@ class IAM(Dataset[IAMConfig, SinglePageDocumentInstance]):
         self, split: DatasetSplitType, data_dir: str
     ) -> IAMSplitIterator:
         return IAMSplitIterator(
-            _iam_root(data_dir),
-            split,
-            self.config.include_bad_segmentations,
-            self.config.crop_to_handwriting,
+            root=_iam_root(data_dir=data_dir),
+            split=split,
+            include_bad_segmentations=self.config.include_bad_segmentations,
+            crop_to_handwriting=self.config.crop_to_handwriting,
         )
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:

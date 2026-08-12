@@ -13,13 +13,13 @@ from pydantic.dataclasses import dataclass as pydantic_dataclass
 from atria_datasets.registry import datasets
 
 
-@datasets.register("fhswf_german_handwriting")
+@datasets.register(name="fhswf_german_handwriting")
 @pydantic_dataclass(frozen=True)
 class FHSWFGermanHandwritingConfig(HuggingfaceDatasetConfig):
     config_name: str = "default"
 
     def build_module(self) -> FHSWFGermanHandwriting:
-        return FHSWFGermanHandwriting("fhswf/german_handwriting", config=self)
+        return FHSWFGermanHandwriting(repo="fhswf/german_handwriting", config=self)
 
 
 class InputTransform:
@@ -42,7 +42,9 @@ class InputTransform:
             sample_id = sample_id.rsplit(".", 1)[0]
         return SinglePageDocumentInstance(
             sample_id=sample_id, visual=Image(content=sample["image"])
-        ).add_annotation(TranscriptionAnnotation(text=sample["text"], level=OCRLevel.line))
+        ).add_annotation(
+            annotation=TranscriptionAnnotation(text=sample["text"], level=OCRLevel.line)
+        )
 
 
 class FHSWFGermanHandwriting(

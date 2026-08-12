@@ -50,7 +50,7 @@ def _parse_manifest(
 
     with open(manifest_path, encoding="utf-8") as f:
         for line in f:
-            data = json.loads(line)
+            data = json.loads(s=line)
 
             words = []
 
@@ -70,11 +70,11 @@ def _parse_manifest(
     return annotations
 
 
-@datasets.register("gnhk")
+@datasets.register(name="gnhk")
 @pydantic_dataclass(frozen=True)
 class GNHKConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> GNHK:
-        return GNHK(self, **kwargs)
+        return GNHK(config=self, **kwargs)
 
 
 class SplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
@@ -85,7 +85,7 @@ class SplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
 
         manifest_path = split_dir / f"{split.value}.manifest"
 
-        annotations = _parse_manifest(manifest_path)
+        annotations = _parse_manifest(manifest_path=manifest_path)
         self.samples = [
             (split_dir / image_name, words)
             for image_name, words in annotations.items()
@@ -100,14 +100,16 @@ class SplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
         image_path, words = self.samples[index]
         annotation = self._annotation_cache.get(index)
         if annotation is None:
-            width, height = get_image_size(image_path, exif_rotation=True)
+            width, height = get_image_size(image_path=image_path, exif_rotation=True)
 
             texts = [text for text, _, _ in words]
             bboxes = np.stack([bbox for _, bbox, _ in words]) / np.array(
                 [width, height, width, height]
             )
             polygons = [polygon / np.array([width, height]) for _, _, polygon in words]
-            annotation = OCRAnnotation.from_words(texts, bboxes, segmentations=polygons)
+            annotation = OCRAnnotation.from_words(
+                texts=texts, bboxes=bboxes, segmentations=polygons
+            )
             self._annotation_cache[index] = annotation
 
         return image_path, annotation
@@ -124,7 +126,7 @@ class InputTransform:
 
         return SinglePageDocumentInstance(
             sample_id=image_path.stem, visual=Image(file_path=str(image_path))
-        ).add_annotation(annotation)
+        ).add_annotation(annotation=annotation)
 
 
 class GNHK(Dataset[GNHKConfig, SinglePageDocumentInstance]):

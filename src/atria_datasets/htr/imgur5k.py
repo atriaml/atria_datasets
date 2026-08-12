@@ -73,7 +73,7 @@ def _annotation_image_ids(info_dir: Path) -> set[str]:
     image_ids: set[str] = set()
     for split_name in _SPLIT_NAMES.values():
         path = info_dir / f"imgur5k_annotations_{split_name}.json"
-        image_ids.update(json.loads(path.read_text(encoding="utf-8"))["index_id"])
+        image_ids.update(json.loads(s=path.read_text(encoding="utf-8"))["index_id"])
     return image_ids
 
 
@@ -93,7 +93,7 @@ def _parse_bounding_box(value: str | list[float]) -> tuple[float, ...] | None:
 def _download_image(image_id: str, checksum: str, image_dir: Path) -> bool:
     image_path = image_dir / f"{image_id}.jpg"
     if image_path.exists():
-        if _md5(image_path) == checksum:
+        if _md5(path=image_path) == checksum:
             return True
         image_path.unlink()
 
@@ -101,7 +101,7 @@ def _download_image(image_id: str, checksum: str, image_dir: Path) -> bool:
     incomplete_path.unlink(missing_ok=True)
     try:
         with requests.get(
-            f"https://i.imgur.com/{image_id}.jpg",
+            url=f"https://i.imgur.com/{image_id}.jpg",
             headers={"User-Agent": "Atria IMGUR5K downloader"},
             timeout=_DOWNLOAD_TIMEOUT_SECONDS,
         ) as response:
@@ -121,8 +121,8 @@ def _download_image(image_id: str, checksum: str, image_dir: Path) -> bool:
 
 
 def _download_images(info_dir: Path, image_dir: Path) -> tuple[int, int]:
-    hashes = _parse_hashes(info_dir / "imgur5k_hashes.lst")
-    image_ids = sorted(_annotation_image_ids(info_dir))
+    hashes = _parse_hashes(path=info_dir / "imgur5k_hashes.lst")
+    image_ids = sorted(_annotation_image_ids(info_dir=info_dir))
     missing_hashes = [image_id for image_id in image_ids if image_id not in hashes]
     if missing_hashes:
         logger.warning(
@@ -133,12 +133,12 @@ def _download_images(info_dir: Path, image_dir: Path) -> tuple[int, int]:
     ]
 
     def download(item: tuple[str, str]) -> bool:
-        return _download_image(*item, image_dir)
+        return _download_image(*item, image_dir=image_dir)
 
     with ThreadPoolExecutor(max_workers=_DOWNLOAD_WORKERS) as executor:
         results = list(
             tqdm.tqdm(
-                executor.map(download, download_items),
+                iterable=executor.map(download, download_items),
                 total=len(download_items),
                 desc="Downloading IMGUR5K images",
                 unit="image",
@@ -147,11 +147,11 @@ def _download_images(info_dir: Path, image_dir: Path) -> tuple[int, int]:
     return sum(results), len(download_items)
 
 
-@datasets.register("imgur5k")
+@datasets.register(name="imgur5k")
 @pydantic_dataclass(frozen=True)
 class IMGUR5KConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> IMGUR5K:
-        return IMGUR5K(self, **kwargs)
+        return IMGUR5K(config=self, **kwargs)
 
 
 class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
@@ -179,7 +179,7 @@ class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
             data_dir=data_root, download_dir=data_root / ".download_cache"
         )
         manager.download_and_extract(
-            [
+            data_urls=[
                 UrlSpec(
                     url=f"{_UPSTREAM_RAW}/{filename}",
                     url_ext=Path(filename).suffix,
@@ -192,9 +192,9 @@ class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
 
         complete_marker = root / ".images_download_complete"
         if not complete_marker.exists():
-            valid, attempted = _download_images(info_dir, image_dir)
+            valid, attempted = _download_images(info_dir=info_dir, image_dir=image_dir)
             complete_marker.write_text(
-                f"valid={valid}\nattempted={attempted}\n", encoding="utf-8"
+                data=f"valid={valid}\nattempted={attempted}\n", encoding="utf-8"
             )
             logger.info("Downloaded %d/%d valid IMGUR5K images", valid, attempted)
 
@@ -217,7 +217,7 @@ class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
         info_path = (
             root / "dataset_info" / f"imgur5k_annotations_{_SPLIT_NAMES[split]}.json"
         )
-        data = json.loads(info_path.read_text(encoding="utf-8"))
+        data = json.loads(s=info_path.read_text(encoding="utf-8"))
         samples: list[tuple[Path, OCRAnnotation]] = []
         for index, metadata in data["index_id"].items():
             image_path = root / "images" / f"{index}.jpg"
@@ -226,11 +226,11 @@ class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
                 image_path = candidate if candidate.is_absolute() else root / candidate
             if not image_path.exists():
                 continue
-            width, height = get_image_size(image_path)
+            width, height = get_image_size(image_path=image_path)
             texts, bboxes, angles = [], [], []
             for annotation_id in data["index_to_ann_map"][index]:
                 item = data["ann_id"][annotation_id]
-                bounding_box = _parse_bounding_box(item["bounding_box"])
+                bounding_box = _parse_bounding_box(value=item["bounding_box"])
                 if bounding_box is None:
                     continue
                 xc, yc, box_width, box_height, angle = bounding_box
@@ -246,7 +246,9 @@ class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
                 angles.append(angle)
             if texts:
                 annotation = replace(
-                    OCRAnnotation.from_words(texts, np.clip(bboxes, 0.0, 1.0)),
+                    OCRAnnotation.from_words(
+                        texts=texts, bboxes=np.clip(bboxes, 0.0, 1.0)
+                    ),
                     angles=np.asarray(angles),
                 )
                 samples.append((image_path, annotation))
@@ -257,6 +259,6 @@ class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
             image_path, annotation = sample
             return SinglePageDocumentInstance(
                 sample_id=image_path.stem, visual=Image(file_path=str(image_path))
-            ).add_annotation(annotation)
+            ).add_annotation(annotation=annotation)
 
         return transform

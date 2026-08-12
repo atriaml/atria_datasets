@@ -10,7 +10,7 @@ from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 from atria_datasets.registry import datasets
 
 
-@datasets.register("koenigsfelden")
+@datasets.register(name="koenigsfelden")
 @pydantic_dataclass(frozen=True)
 class KoenigsfeldenConfig(DatasetConfig):
     # Zenodo's digitized_documents.zip explicitly excludes the cartularies
@@ -19,7 +19,7 @@ class KoenigsfeldenConfig(DatasetConfig):
     collection: Literal["kbs", "u17"] = "u17"
 
     def build_module(self, **kwargs: Any) -> Koenigsfelden:
-        return Koenigsfelden(self, **kwargs)
+        return Koenigsfelden(config=self, **kwargs)
 
 
 class Koenigsfelden(PageXMLDataset):
