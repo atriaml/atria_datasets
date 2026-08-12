@@ -13,6 +13,7 @@ authors = [{ name = "Saifullah", email = "saifullah.saifullah@dfki.de" }]
 dependencies = [
     "atria-core",
     "boto3>=1.39.4",
+    "click>=8.1.7",
     "datadings",
     "datasets==3.4",
     "deltalake>=1.0.2",
@@ -150,5 +151,4 @@ dev = [
 disable_error_code = ["import-untyped", "import-not-found"]
 
 [project.scripts]
-prepare_dataset = "atria_datasets.prepare_dataset:main"
-build_registry = "atria_datasets.build_registry:main"
+atria_datasets = "atria_datasets.cli:main"

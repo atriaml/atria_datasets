@@ -268,6 +268,7 @@ source = { editable = "." }
 dependencies = [
     { name = "atria-core" },
     { name = "boto3" },
+    { name = "click" },
     { name = "datadings" },
     { name = "datasets" },
     { name = "deltalake" },
@@ -322,6 +323,7 @@ dev = [
 requires-dist = [
     { name = "atria-core", editable = "../atria_core" },
     { name = "boto3", specifier = ">=1.39.4" },
+    { name = "click", specifier = ">=8.1.7" },
     { name = "coverage", marker = "extra == 'test'" },
     { name = "datadings", git = "https://github.com/saifullah3396/datadings.git" },
     { name = "datasets", specifier = "==3.4" },
