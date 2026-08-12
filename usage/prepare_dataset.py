@@ -22,7 +22,6 @@ from atria_core.datasets import Cacher, FileStorageType
 from atria_core.logger import get_logger
 from atria_core.visualizers import visualize
 
-import atria_datasets  # noqa: F401  (populates the registry on import)
 from atria_datasets.registry import datasets
 
 logger = get_logger(__name__)

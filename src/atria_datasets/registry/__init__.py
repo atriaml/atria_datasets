@@ -1,5 +1,3 @@
-from atria_core.registry import Registry
-
-datasets = Registry.group("datasets")
+from atria_core.datasets import datasets
 
 __all__ = ["datasets"]
