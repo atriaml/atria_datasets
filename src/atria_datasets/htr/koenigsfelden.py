@@ -7,10 +7,10 @@ from atria_core.datasets._download._download_manager import UrlSpec
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 
-@datasets.register(name="koenigsfelden")
+@dataset_configs.register(name="koenigsfelden")
 @pydantic_dataclass(frozen=True)
 class KoenigsfeldenConfig(DatasetConfig):
     # Zenodo's digitized_documents.zip explicitly excludes the cartularies

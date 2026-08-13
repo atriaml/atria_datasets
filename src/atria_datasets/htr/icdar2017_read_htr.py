@@ -8,10 +8,10 @@ from atria_core.types import DatasetSplitType
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 
-@datasets.register(name="icdar2017_read_htr_a")
+@dataset_configs.register(name="icdar2017_read_htr_a")
 @pydantic_dataclass(frozen=True)
 class ICDAR2017ReadHTRAConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> ICDAR2017ReadHTRA:
@@ -45,7 +45,7 @@ class ICDAR2017ReadHTRA(PageXMLDataset):
     }
 
 
-@datasets.register(name="icdar2017_read_htr_b")
+@dataset_configs.register(name="icdar2017_read_htr_b")
 @pydantic_dataclass(frozen=True)
 class ICDAR2017ReadHTRBConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> ICDAR2017ReadHTRB:

@@ -27,7 +27,7 @@ from atria_core.types._generic._image import Image
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import get_image_size
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 _HOMEPAGE = "https://github.com/facebookresearch/IMGUR5K-Handwriting-Dataset"
 _UPSTREAM_REVISION = "756a9ac9ed5201345661e1d9b7a5eb53502b97d5"
@@ -147,7 +147,7 @@ def _download_images(info_dir: Path, image_dir: Path) -> tuple[int, int]:
     return sum(results), len(download_items)
 
 
-@datasets.register(name="imgur5k")
+@dataset_configs.register(name="imgur5k")
 @pydantic_dataclass(frozen=True)
 class IMGUR5KConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> IMGUR5K:

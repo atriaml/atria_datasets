@@ -13,13 +13,13 @@ from atria_core.types import (
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import IMAGE_SUFFIXES, TextAnnotationTransform
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 from atria_datasets.utils import require_manual_path
 
 _HOMEPAGE = "https://www.nist.gov/srd/nist-special-database-19"
 
 
-@datasets.register(name="nist_sd19")
+@dataset_configs.register(name="nist_sd19")
 @pydantic_dataclass(frozen=True)
 class NISTSD19Config(DatasetConfig):
     def build_module(self, **kwargs: Any) -> NISTSD19:

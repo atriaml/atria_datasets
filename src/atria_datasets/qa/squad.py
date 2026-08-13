@@ -7,10 +7,10 @@ from atria_core.datasets._hf_dataset import HuggingfaceDataset, HuggingfaceDatas
 from atria_core.types import QAPair, QuestionAnsweringAnnotation, TextInstance
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 
-@datasets.register(name="squad")
+@dataset_configs.register(name="squad")
 @pydantic_dataclass(frozen=True)
 class SquadConfig(HuggingfaceDatasetConfig):
     def build_module(self, **kwargs: Any) -> Squad:

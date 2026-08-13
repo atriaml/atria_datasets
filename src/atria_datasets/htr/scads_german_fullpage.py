@@ -14,10 +14,10 @@ from atria_core.types._generic._elements import OCRLevel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import TextAnnotationTransform, TextFileIterator
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 
-@datasets.register(name="scadsai_german_fullpage")
+@dataset_configs.register(name="scadsai_german_fullpage")
 @pydantic_dataclass(frozen=True)
 class ScaDSAIFullPageConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> ScaDSAIFullPage:

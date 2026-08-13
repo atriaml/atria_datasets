@@ -8,10 +8,10 @@ from atria_core.types import DatasetSplitType
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 
-@datasets.register(name="austrian_newspapers")
+@dataset_configs.register(name="austrian_newspapers")
 @pydantic_dataclass(frozen=True)
 class AustrianNewspapersConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> AustrianNewspapers:

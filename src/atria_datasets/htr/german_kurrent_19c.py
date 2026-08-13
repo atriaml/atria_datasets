@@ -9,12 +9,12 @@ from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import PageXMLIterator
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
-from atria_datasets.registry import datasets
 
 _DTA_MARKERS = ("libelt", "hufeland", "erbkam", "auerbach")
+from atria_datasets.registry import dataset_configs
 
 
-@datasets.register(name="german_kurrent_19c")
+@dataset_configs.register(name="german_kurrent_19c")
 @pydantic_dataclass(frozen=True)
 class GermanKurrent19CConfig(DatasetConfig):
     license_subset: Literal["cc_by_only", "all"] = "cc_by_only"

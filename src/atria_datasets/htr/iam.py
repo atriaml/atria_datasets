@@ -29,7 +29,7 @@ from atria_datasets.parsers import (
     parse_iam_forms,
     parse_iam_split,
 )
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 from atria_datasets.utils import require_manual_path
 
 _HOMEPAGE = "https://fki.tic.heia-fr.ch/databases/iam-handwriting-database"
@@ -58,7 +58,7 @@ def _iam_root(data_dir: str | Path) -> Path:
     )
 
 
-@datasets.register(name="iam")
+@dataset_configs.register(name="iam")
 @pydantic_dataclass(frozen=True)
 class IAMConfig(DatasetConfig):
     include_bad_segmentations: bool = False
@@ -68,9 +68,7 @@ class IAMConfig(DatasetConfig):
         return IAM(config=self, **kwargs)
 
 
-def _bbox(
-    record: IAMRecord, crop_box: tuple[int, int, int, int]
-) -> np.ndarray:
+def _bbox(record: IAMRecord, crop_box: tuple[int, int, int, int]) -> np.ndarray:
     left, top, right, bottom = crop_box
     width, height = right - left, bottom - top
     return np.clip(
@@ -156,12 +154,8 @@ class IAMSplitIterator(Sequence[IAMFormSample]):
         words = parse_iam_ascii(path=root / "ascii" / "words.txt")
         form_ids = parse_iam_split(path=root / "splits" / _AACHEN_SPLITS[split])
         writer_ids = sorted({form.writer_id for form in forms.values()})
-        writer_labels = {
-            writer_id: label for label, writer_id in enumerate(writer_ids)
-        }
-        image_paths = {
-            path.stem: path for path in (root / "forms").rglob("*.png")
-        }
+        writer_labels = {writer_id: label for label, writer_id in enumerate(writer_ids)}
+        image_paths = {path.stem: path for path in (root / "forms").rglob("*.png")}
         lines_by_form: dict[str, list[IAMRecord]] = defaultdict(list)
         words_by_line: dict[str, list[IAMRecord]] = defaultdict(list)
         for record in lines.values():
@@ -221,8 +215,7 @@ class IAMInputTransform:
         ).add_annotation(annotation=sample.annotation)
         return instance.add_annotation(
             annotation=ClassificationAnnotation(
-                label_value=sample.writer_label,
-                label_name=sample.writer_id,
+                label_value=sample.writer_label, label_name=sample.writer_id
             )
         )
 

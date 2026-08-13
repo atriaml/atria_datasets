@@ -1,3 +1,3 @@
-from atria_core.datasets import datasets
+from atria_core.datasets import dataset_configs
 
-__all__ = ["datasets"]
+__all__ = ["dataset_configs"]

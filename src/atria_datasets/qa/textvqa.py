@@ -12,12 +12,12 @@ from atria_core.types import (
 )
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 _IMAGES_SUBDIR = "images"
 
 
-@datasets.register(name="textvqa")
+@dataset_configs.register(name="textvqa")
 @pydantic_dataclass(frozen=True)
 class TextVqaConfig(HuggingfaceDatasetConfig):
     def build_module(self, **kwargs: Any) -> TextVqa:

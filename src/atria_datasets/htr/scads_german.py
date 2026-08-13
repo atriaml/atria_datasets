@@ -19,7 +19,7 @@ from atria_core.types._generic._elements import OCRLevel
 from atria_core.types._generic._image import Image
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 _DATA_URLS = [
     UrlSpec(
@@ -38,13 +38,7 @@ _LICENSE = "CC BY 4.0"
 
 
 def _row_text(row: dict[str, str], ocr_level: OCRLevel) -> str:
-    keys = (
-        f"{ocr_level.name}_text",
-        "text",
-        "transcription",
-        "gt",
-        "label",
-    )
+    keys = (f"{ocr_level.name}_text", "text", "transcription", "gt", "label")
     for key in keys:
         value = row.get(key)
         if value is not None and value != "":
@@ -52,7 +46,7 @@ def _row_text(row: dict[str, str], ocr_level: OCRLevel) -> str:
     raise ValueError(f"Missing transcription field for {ocr_level.name} sample: {row}")
 
 
-@datasets.register(name="scadsai_german_handwriting")
+@dataset_configs.register(name="scadsai_german_handwriting")
 @pydantic_dataclass(frozen=True)
 class ScaDSAIConfig(DatasetConfig):
     level: OCRLevel = OCRLevel.line
@@ -101,9 +95,7 @@ class InputTransform:
     def __init__(self, *, ocr_level: OCRLevel) -> None:
         self.ocr_level = ocr_level
 
-    def __call__(
-        self, sample: tuple[Path, str]
-    ) -> SinglePageDocumentInstance:
+    def __call__(self, sample: tuple[Path, str]) -> SinglePageDocumentInstance:
         image_path, text = sample
 
         return SinglePageDocumentInstance(

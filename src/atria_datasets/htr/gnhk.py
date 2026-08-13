@@ -20,7 +20,7 @@ from atria_core.types._generic._image import Image
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import get_image_size
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 _DATA_URLS = [
     UrlSpec(
@@ -70,7 +70,7 @@ def _parse_manifest(
     return annotations
 
 
-@datasets.register(name="gnhk")
+@dataset_configs.register(name="gnhk")
 @pydantic_dataclass(frozen=True)
 class GNHKConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> GNHK:

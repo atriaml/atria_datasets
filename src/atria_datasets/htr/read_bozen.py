@@ -17,7 +17,7 @@ from atria_core.types._generic._image import Image
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.parsers import parse_page_xml
-from atria_datasets.registry import datasets
+from atria_datasets.registry import dataset_configs
 
 _DATA_URLS = [
     UrlSpec(
@@ -50,7 +50,7 @@ _SPLIT_LAYOUT: dict[DatasetSplitType, tuple[str, bool]] = {
 }
 
 
-@datasets.register(name="read_bozen")
+@dataset_configs.register(name="read_bozen")
 @pydantic_dataclass(frozen=True)
 class ReadBozenConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> ReadBozen:

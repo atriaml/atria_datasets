@@ -14,13 +14,14 @@ from atria_core.types._generic._elements import OCRLevel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import TextAnnotationTransform, TextFileIterator
-from atria_datasets.registry import datasets
 from atria_datasets.utils import require_manual_path
 
 _HOMEPAGE = "https://fki.tic.heia-fr.ch/databases/iam-historical-document-database"
 
+from atria_datasets.registry import dataset_configs
 
-@datasets.register(name="iam_histdb")
+
+@dataset_configs.register(name="iam_histdb")
 @pydantic_dataclass(frozen=True)
 class IAMHistDBConfig(DatasetConfig):
     collection: Literal["washington", "parzival", "saint_gall"] = "washington"

@@ -19,14 +19,13 @@ from atria_core.types._generic._elements import OCRLevel
 from atria_core.types._generic._image import Image
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
-from atria_datasets.registry import datasets
-
 _HOMEPAGE = "https://zenodo.org/records/1492267"
 _ARCHIVE_NAME = "cvl-database-1-1"
 _URLS = [UrlSpec(url=f"{_HOMEPAGE}/files/{_ARCHIVE_NAME}.zip", url_ext=".zip")]
+from atria_datasets.registry import dataset_configs
 
 
-@datasets.register(name="cvl")
+@dataset_configs.register(name="cvl")
 @pydantic_dataclass(frozen=True)
 class CVLConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> CVL:
@@ -35,11 +34,7 @@ class CVLConfig(DatasetConfig):
 
 def _dataset_root(data_dir: str | Path) -> Path:
     root = Path(data_dir)
-    candidates = (
-        root / _ARCHIVE_NAME / _ARCHIVE_NAME,
-        root / _ARCHIVE_NAME,
-        root,
-    )
+    candidates = (root / _ARCHIVE_NAME / _ARCHIVE_NAME, root / _ARCHIVE_NAME, root)
     return next(
         (path for path in candidates if (path / "trainset" / "words").is_dir()),
         candidates[0],
@@ -72,8 +67,7 @@ class CVLWordIterator(Sequence[CVLWordSample]):
         root = _dataset_root(data_dir=data_dir)
         split_dir = root / f"{split.value}set" / "words"
         writer_labels = {
-            writer_id: label
-            for label, writer_id in enumerate(_writer_ids(root=root))
+            writer_id: label for label, writer_id in enumerate(_writer_ids(root=root))
         }
 
         self.samples: list[CVLWordSample] = []
@@ -115,8 +109,7 @@ class CVLWordTransform:
         )
         return instance.add_annotation(
             annotation=ClassificationAnnotation(
-                label_value=sample.writer_label,
-                label_name=sample.writer_id,
+                label_value=sample.writer_label, label_name=sample.writer_id
             )
         )
 

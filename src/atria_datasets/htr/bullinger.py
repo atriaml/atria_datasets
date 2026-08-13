@@ -15,7 +15,6 @@ from atria_core.types._generic._elements import OCRLevel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import TextAnnotationTransform
-from atria_datasets.registry import datasets
 from atria_datasets.utils import require_manual_path
 
 _HOMEPAGE = "https://tc11.cvc.uab.es/datasets/BullingerDB_1"
@@ -24,9 +23,10 @@ _TSV = {
     DatasetSplitType.validation: "valid/valid_frequent.tsv",
     DatasetSplitType.test: "test/test_frequent.tsv",
 }
+from atria_datasets.registry import dataset_configs
 
 
-@datasets.register(name="bullinger")
+@dataset_configs.register(name="bullinger")
 @pydantic_dataclass(frozen=True)
 class BullingerConfig(DatasetConfig):
     def build_module(self, **kwargs: Any) -> Bullinger:
