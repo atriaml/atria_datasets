@@ -26,7 +26,7 @@ def prepare_dataset(
     cached = (
         DatasetBuilder()
         .load(name, **dataset_kwargs)
-        .cache(FileStorageType.DELTALAKE)
+        .cache(FileStorageType.DELTALAKE, store_images_to_files=True)
         .build()
     )
     logger.info("Cached dataset:\n%s", cached)
