@@ -108,7 +108,8 @@ def test_load_dataset_forwards_shared_and_specific_arguments(
         crop_to_handwriting=False,
     )
 
-    assert dataset.config.crop_to_handwriting is False
+    config: Any = dataset.config
+    assert config.crop_to_handwriting is False
     assert dataset._factory_test_build_args == (  # type: ignore[attr-defined]
         str(dataset.data_dir),
         DatasetSplitType.validation,
