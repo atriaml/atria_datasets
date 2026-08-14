@@ -5,14 +5,13 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from atria_core.datasets import Dataset, DatasetConfig
+from atria_core.datasets import Dataset
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
     SinglePageDocumentInstance,
 )
 from atria_core.types._generic._elements import OCRLevel
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import TextAnnotationTransform
 from atria_datasets.utils import require_manual_path
@@ -23,17 +22,11 @@ _TSV = {
     DatasetSplitType.validation: "valid/valid_frequent.tsv",
     DatasetSplitType.test: "test/test_frequent.tsv",
 }
-from atria_datasets.registry import dataset_configs
 
 
-@dataset_configs.register(name="bullinger")
-@pydantic_dataclass(frozen=True)
-class BullingerConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> Bullinger:
-        return Bullinger(config=self, **kwargs)
+class Bullinger(Dataset[SinglePageDocumentInstance]):
+    """BullingerDB historical line images with writer-disjoint splits."""
 
-
-class Bullinger(Dataset[BullingerConfig, SinglePageDocumentInstance]):
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
@@ -71,3 +64,17 @@ class Bullinger(Dataset[BullingerConfig, SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return TextAnnotationTransform(level=OCRLevel.line)
+
+
+def bullinger(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> Bullinger:
+    """Build the Bullinger historical handwriting dataset."""
+    return Bullinger(
+        dataset_dir_name="bullinger",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 from atria_core.datasets import DatasetConfig
 from atria_core.datasets._download._download_manager import UrlSpec
@@ -11,19 +11,20 @@ from atria_datasets.htr._common import PageXMLIterator
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 
 _DTA_MARKERS = ("libelt", "hufeland", "erbkam", "auerbach")
-from atria_datasets.registry import dataset_configs
 
 
-@dataset_configs.register(name="german_kurrent_19c")
 @pydantic_dataclass(frozen=True)
 class GermanKurrent19CConfig(DatasetConfig):
+    """Params for the German Kurrent 19th-century dataset."""
+
     license_subset: Literal["cc_by_only", "all"] = "cc_by_only"
 
-    def build_module(self, **kwargs: Any) -> GermanKurrent19C:
-        return GermanKurrent19C(config=self, **kwargs)
 
+class GermanKurrent19C(PageXMLDataset[GermanKurrent19CConfig]):
+    """German Kurrent pages and lines from 19th-century sources."""
 
-class GermanKurrent19C(PageXMLDataset):
+    __config__ = GermanKurrent19CConfig
+
     urls = [
         UrlSpec(
             url="https://zenodo.org/records/17252677/files/data.zip", url_ext=".zip"
@@ -61,3 +62,19 @@ class GermanKurrent19C(PageXMLDataset):
                 license="CC BY 4.0",
             )
         return metadata
+
+
+def german_kurrent_19c(
+    license_subset: Literal["cc_by_only", "all"] = "cc_by_only",
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> GermanKurrent19C:
+    """Build the German Kurrent 19th-century dataset."""
+    return GermanKurrent19C(
+        config=GermanKurrent19CConfig(license_subset=license_subset),
+        dataset_dir_name="german_kurrent_19c",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

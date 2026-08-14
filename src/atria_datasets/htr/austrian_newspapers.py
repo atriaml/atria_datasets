@@ -1,24 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
-
-from atria_core.datasets import DatasetConfig
 from atria_core.datasets._download._download_manager import UrlSpec
 from atria_core.types import DatasetSplitType
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
-from atria_datasets.registry import dataset_configs
-
-
-@dataset_configs.register(name="austrian_newspapers")
-@pydantic_dataclass(frozen=True)
-class AustrianNewspapersConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> AustrianNewspapers:
-        return AustrianNewspapers(config=self, **kwargs)
 
 
 class AustrianNewspapers(PageXMLDataset):
+    """NewsEye/READ OCR ground truth from Austrian newspapers: historical
+    Fraktur print with PAGE-XML transcriptions."""
+
     urls = [
         UrlSpec(
             url="https://zenodo.org/records/3387369/files/TrainingSet_ONB_Newseye_GT_M1%2B.zip",
@@ -36,3 +27,17 @@ class AustrianNewspapers(PageXMLDataset):
         DatasetSplitType.train: ("train",),
         DatasetSplitType.validation: ("valid", "val"),
     }
+
+
+def austrian_newspapers(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> AustrianNewspapers:
+    """Build the Austrian newspapers OCR ground-truth dataset."""
+    return AustrianNewspapers(
+        dataset_dir_name="austrian_newspapers",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

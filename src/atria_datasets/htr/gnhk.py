@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, cast, overload
 
 import numpy as np
-from atria_core.datasets import Dataset, DatasetConfig
+from atria_core.datasets import Dataset
 from atria_core.datasets._download._download_manager import UrlSpec
 from atria_core.types import (
     DatasetMetadata,
@@ -17,10 +17,8 @@ from atria_core.types import (
 )
 from atria_core.types._generic._annotations import OCRAnnotation
 from atria_core.types._generic._image import Image
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import get_image_size
-from atria_datasets.registry import dataset_configs
 
 _DATA_URLS = [
     UrlSpec(
@@ -70,13 +68,6 @@ def _parse_manifest(
     return annotations
 
 
-@dataset_configs.register(name="gnhk")
-@pydantic_dataclass(frozen=True)
-class GNHKConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> GNHK:
-        return GNHK(config=self, **kwargs)
-
-
 class SplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
     def __init__(self, data_dir: str, split: DatasetSplitType):
         root = Path(data_dir)
@@ -93,7 +84,17 @@ class SplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
         ]
         self._annotation_cache: dict[int, OCRAnnotation] = {}
 
-    def __getitem__(self, index: int) -> tuple[Path, OCRAnnotation]:
+    @overload
+    def __getitem__(self, index: int) -> tuple[Path, OCRAnnotation]: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[tuple[Path, OCRAnnotation]]: ...
+
+    def __getitem__(
+        self, index: int | slice
+    ) -> tuple[Path, OCRAnnotation] | Sequence[tuple[Path, OCRAnnotation]]:
+        if isinstance(index, slice):
+            return [self[item] for item in range(*index.indices(len(self)))]
         if index < 0:
             index += len(self.samples)
 
@@ -107,8 +108,11 @@ class SplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
                 [width, height, width, height]
             )
             polygons = [polygon / np.array([width, height]) for _, _, polygon in words]
-            annotation = OCRAnnotation.from_words(
-                texts=texts, bboxes=bboxes, segmentations=polygons
+            annotation = cast(
+                OCRAnnotation,
+                OCRAnnotation.from_words(
+                    texts=texts, bboxes=bboxes, segmentations=polygons
+                ),
             )
             self._annotation_cache[index] = annotation
 
@@ -129,8 +133,10 @@ class InputTransform:
         ).add_annotation(annotation=annotation)
 
 
-class GNHK(Dataset[GNHKConfig, SinglePageDocumentInstance]):
-    def _download_urls(self) -> list[str]:
+class GNHK(Dataset[SinglePageDocumentInstance]):
+    """GoodNotes handwriting images with word-level polygons."""
+
+    def _download_urls(self) -> list[UrlSpec]:
         return _DATA_URLS
 
     def _metadata(self) -> DatasetMetadata:
@@ -148,3 +154,17 @@ class GNHK(Dataset[GNHKConfig, SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
+
+
+def gnhk(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> GNHK:
+    """Build the GoodNotes Handwriting Kollection dataset."""
+    return GNHK(
+        dataset_dir_name="gnhk",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

@@ -4,24 +4,15 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from atria_core.datasets._hf_dataset import HuggingfaceDataset, HuggingfaceDatasetConfig
+from atria_core.datasets._hf_dataset import HuggingfaceDataset
 from atria_core.types import (
+    DatasetSplitType,
     QAPair,
     QuestionAnsweringAnnotation,
     SinglePageDocumentInstance,
 )
-from pydantic.dataclasses import dataclass as pydantic_dataclass
-
-from atria_datasets.registry import dataset_configs
 
 _IMAGES_SUBDIR = "images"
-
-
-@dataset_configs.register(name="textvqa")
-@pydantic_dataclass(frozen=True)
-class TextVqaConfig(HuggingfaceDatasetConfig):
-    def build_module(self, **kwargs: Any) -> TextVqa:
-        return TextVqa(repo="lmms-lab/textvqa", config=self, **kwargs)
 
 
 class InputTransform:
@@ -46,6 +37,25 @@ class InputTransform:
         ).add_annotation(annotation=QuestionAnsweringAnnotation(qa_pairs=[qa_pair]))
 
 
-class TextVqa(HuggingfaceDataset[TextVqaConfig, SinglePageDocumentInstance]):
+class TextVqa(HuggingfaceDataset[SinglePageDocumentInstance]):
+    """TextVQA: questions answered from text visible in images."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(repo="lmms-lab/textvqa", **kwargs)
+
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform(self.data_dir / _IMAGES_SUBDIR)
+
+
+def textvqa(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> TextVqa:
+    """Build the TextVQA visual question-answering dataset."""
+    return TextVqa(
+        dataset_dir_name="textvqa",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

@@ -1,1 +1,1 @@
-from .nist_sd19 import NISTSD19Config  # noqa: F401
+"""Character-recognition datasets."""

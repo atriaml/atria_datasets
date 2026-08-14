@@ -87,9 +87,7 @@ def parse_page_xml(
     ns = {"pc": ns_uri} if ns_uri else {}
 
     page = (
-        root.find(path="pc:Page", namespaces=ns)
-        if ns_uri
-        else root.find(path="Page")
+        root.find(path="pc:Page", namespaces=ns) if ns_uri else root.find(path="Page")
     )
     if page is None:
         raise ValueError(f"No <Page> element found in {xml_path}")
@@ -116,9 +114,10 @@ def parse_page_xml(
         level: OCRLevel, parent_id: int, polygon_px: np.ndarray | None, text: str
     ) -> int:
         element_id = len(ids)
+        norm_bbox: tuple[float, float, float, float]
         if polygon_px is not None:
             xs, ys = polygon_px[:, 0], polygon_px[:, 1]
-            norm_bbox = np.clip(
+            clipped_bbox = np.clip(
                 (
                     xs.min() / width,
                     ys.min() / height,
@@ -128,6 +127,12 @@ def parse_page_xml(
                 0.0,
                 1.0,
             )
+            norm_bbox = (
+                float(clipped_bbox[0]),
+                float(clipped_bbox[1]),
+                float(clipped_bbox[2]),
+                float(clipped_bbox[3]),
+            )
             norm_polygon = np.clip(polygon_px / np.array([width, height]), 0.0, 1.0)
         else:
             norm_bbox = (0.0, 0.0, 1.0, 1.0)
@@ -136,7 +141,7 @@ def parse_page_xml(
         ids.append(element_id)
         parent_ids.append(parent_id)
         levels.append(level.value)
-        bboxes.append(tuple(norm_bbox))
+        bboxes.append(norm_bbox)
         texts.append(text)
         polygons.append(norm_polygon)
         return element_id

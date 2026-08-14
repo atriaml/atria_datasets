@@ -1,24 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
-
-from atria_core.datasets import DatasetConfig
 from atria_core.datasets._download._download_manager import UrlSpec
 from atria_core.types import DatasetSplitType
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
-from atria_datasets.registry import dataset_configs
-
-
-@dataset_configs.register(name="bentham")
-@pydantic_dataclass(frozen=True)
-class BenthamConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> Bentham:
-        return Bentham(config=self, **kwargs)
 
 
 class Bentham(PageXMLDataset):
+    """Bentham handwritten manuscript pages with PAGE-XML ground truth, from
+    the ImageCLEF 2016 release."""
+
     urls = [
         UrlSpec(url=f"https://zenodo.org/records/52994/files/{name}", url_ext=".zip")
         for name in (
@@ -39,3 +30,17 @@ class Bentham(PageXMLDataset):
         DatasetSplitType.validation: ("devel", "valid"),
         DatasetSplitType.test: ("test",),
     }
+
+
+def bentham(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> Bentham:
+    """Build the Bentham handwritten manuscript dataset."""
+    return Bentham(
+        dataset_dir_name="bentham",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

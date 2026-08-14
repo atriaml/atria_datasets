@@ -1,24 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
-
-from atria_core.datasets import DatasetConfig
 from atria_core.datasets._download._download_manager import UrlSpec
 from atria_core.types import DatasetSplitType
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
-from atria_datasets.registry import dataset_configs
-
-
-@dataset_configs.register(name="icdar2017_read_htr_a")
-@pydantic_dataclass(frozen=True)
-class ICDAR2017ReadHTRAConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> ICDAR2017ReadHTRA:
-        return ICDAR2017ReadHTRA(config=self, **kwargs)
 
 
 class ICDAR2017ReadHTRA(PageXMLDataset):
+    """ICDAR2017 READ HTR traditional benchmark: the fully line-annotated
+    Train-A and Test-A subsets."""
+
     # Train-A and Test-A are the fully line-annotated HTR benchmark subsets.
     urls = [
         UrlSpec(
@@ -45,14 +36,30 @@ class ICDAR2017ReadHTRA(PageXMLDataset):
     }
 
 
-@dataset_configs.register(name="icdar2017_read_htr_b")
-@pydantic_dataclass(frozen=True)
-class ICDAR2017ReadHTRBConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> ICDAR2017ReadHTRB:
-        return ICDAR2017ReadHTRB(config=self, **kwargs)
+def icdar2017_read_htr_a(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> ICDAR2017ReadHTRA:
+    """Build the ICDAR2017 READ HTR traditional benchmark (Train-A/Test-A).
+
+    Args:
+        data_dir: Where to read and write data.
+        access_token: Credential for datasets behind authentication.
+        split: Build only this split, instead of every available one.
+    """
+    return ICDAR2017ReadHTRA(
+        dataset_dir_name="icdar2017_read_htr_a",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )
 
 
 class ICDAR2017ReadHTRB(PageXMLDataset):
+    """ICDAR2017 READ HTR advanced benchmark: page-level Train-B and
+    region-only Test-B1/Test-B2 subsets."""
+
     # Train-B has page-level transcripts but no line geometry. Test-B1 and
     # Test-B2 expose regions only and are intended for end-to-end inference.
     urls = [
@@ -88,3 +95,23 @@ class ICDAR2017ReadHTRB(PageXMLDataset):
         DatasetSplitType.validation: ("test-b1", "test_b1"),
         DatasetSplitType.test: ("test-b2", "test_b2"),
     }
+
+
+def icdar2017_read_htr_b(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> ICDAR2017ReadHTRB:
+    """Build the ICDAR2017 READ HTR advanced benchmark (Train-B/Test-B).
+
+    Args:
+        data_dir: Where to read and write data.
+        access_token: Credential for datasets behind authentication.
+        split: Build only this split, instead of every available one.
+    """
+    return ICDAR2017ReadHTRB(
+        dataset_dir_name="icdar2017_read_htr_b",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

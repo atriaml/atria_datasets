@@ -18,19 +18,19 @@ from atria_datasets.utils import require_manual_path
 
 _HOMEPAGE = "https://fki.tic.heia-fr.ch/databases/iam-historical-document-database"
 
-from atria_datasets.registry import dataset_configs
 
-
-@dataset_configs.register(name="iam_histdb")
 @pydantic_dataclass(frozen=True)
 class IAMHistDBConfig(DatasetConfig):
+    """Params for the IAM Historical Document Database."""
+
     collection: Literal["washington", "parzival", "saint_gall"] = "washington"
 
-    def build_module(self, **kwargs: Any) -> IAMHistDB:
-        return IAMHistDB(config=self, **kwargs)
 
+class IAMHistDB(Dataset[SinglePageDocumentInstance, IAMHistDBConfig]):
+    """IAM historical line images and paired transcriptions."""
 
-class IAMHistDB(Dataset[IAMHistDBConfig, SinglePageDocumentInstance]):
+    __config__ = IAMHistDBConfig
+
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
@@ -61,3 +61,19 @@ class IAMHistDB(Dataset[IAMHistDBConfig, SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return TextAnnotationTransform(level=OCRLevel.line)
+
+
+def iam_histdb(
+    collection: Literal["washington", "parzival", "saint_gall"] = "washington",
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> IAMHistDB:
+    """Build an IAM Historical Document Database collection."""
+    return IAMHistDB(
+        config=IAMHistDBConfig(collection=collection),
+        dataset_dir_name="iam_histdb",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

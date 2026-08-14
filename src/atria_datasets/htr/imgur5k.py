@@ -6,12 +6,12 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import requests
 import tqdm
-from atria_core.datasets import Dataset, DatasetConfig
+from atria_core.datasets import Dataset
 from atria_core.datasets._download._download_manager import (
     AtriaDownloadManager,
     UrlSpec,
@@ -24,10 +24,8 @@ from atria_core.types import (
 )
 from atria_core.types._generic._annotations import OCRAnnotation
 from atria_core.types._generic._image import Image
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import get_image_size
-from atria_datasets.registry import dataset_configs
 
 _HOMEPAGE = "https://github.com/facebookresearch/IMGUR5K-Handwriting-Dataset"
 _UPSTREAM_REVISION = "756a9ac9ed5201345661e1d9b7a5eb53502b97d5"
@@ -83,7 +81,7 @@ def _parse_bounding_box(value: str | list[float]) -> tuple[float, ...] | None:
     if isinstance(value, str):
         values = value.strip().strip("[]()").split(",")
     else:
-        values = value
+        values = [str(item) for item in value]
     coordinates = tuple(float(item) for item in values)
     if len(coordinates) != 5:
         raise ValueError(f"Expected five IMGUR5K bounding-box values, got {value!r}")
@@ -147,14 +145,9 @@ def _download_images(info_dir: Path, image_dir: Path) -> tuple[int, int]:
     return sum(results), len(download_items)
 
 
-@dataset_configs.register(name="imgur5k")
-@pydantic_dataclass(frozen=True)
-class IMGUR5KConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> IMGUR5K:
-        return IMGUR5K(config=self, **kwargs)
+class IMGUR5K(Dataset[SinglePageDocumentInstance]):
+    """IMGUR5K in-the-wild handwriting with rotated word boxes."""
 
-
-class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
@@ -245,11 +238,14 @@ class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
                 )
                 angles.append(angle)
             if texts:
-                annotation = replace(
-                    OCRAnnotation.from_words(
-                        texts=texts, bboxes=np.clip(bboxes, 0.0, 1.0)
+                annotation = cast(
+                    OCRAnnotation,
+                    replace(
+                        OCRAnnotation.from_words(
+                            texts=texts, bboxes=np.clip(bboxes, 0.0, 1.0)
+                        ),
+                        angles=np.asarray(angles),
                     ),
-                    angles=np.asarray(angles),
                 )
                 samples.append((image_path, annotation))
         return samples
@@ -262,3 +258,17 @@ class IMGUR5K(Dataset[IMGUR5KConfig, SinglePageDocumentInstance]):
             ).add_annotation(annotation=annotation)
 
         return transform
+
+
+def imgur5k(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> IMGUR5K:
+    """Build the IMGUR5K handwriting dataset."""
+    return IMGUR5K(
+        dataset_dir_name="imgur5k",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

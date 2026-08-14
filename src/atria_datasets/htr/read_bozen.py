@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, overload
 
-from atria_core.datasets import Dataset, DatasetConfig
+from atria_core.datasets import Dataset
 from atria_core.datasets._download._download_manager import UrlSpec
 from atria_core.types import (
     DatasetMetadata,
@@ -14,10 +14,8 @@ from atria_core.types import (
     SinglePageDocumentInstance,
 )
 from atria_core.types._generic._image import Image
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.parsers import parse_page_xml
-from atria_datasets.registry import dataset_configs
 
 _DATA_URLS = [
     UrlSpec(
@@ -50,13 +48,6 @@ _SPLIT_LAYOUT: dict[DatasetSplitType, tuple[str, bool]] = {
 }
 
 
-@dataset_configs.register(name="read_bozen")
-@pydantic_dataclass(frozen=True)
-class ReadBozenConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> ReadBozen:
-        return ReadBozen(config=self, **kwargs)
-
-
 class SplitIterator(Sequence[tuple[Path, Path]]):
     """Each sample is (image_path, page_xml_path)."""
 
@@ -82,7 +73,15 @@ class SplitIterator(Sequence[tuple[Path, Path]]):
             if image_path.exists():
                 self.samples.append((image_path, xml_path))
 
-    def __getitem__(self, index: int) -> tuple[Path, Path]:
+    @overload
+    def __getitem__(self, index: int) -> tuple[Path, Path]: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[tuple[Path, Path]]: ...
+
+    def __getitem__(
+        self, index: int | slice
+    ) -> tuple[Path, Path] | Sequence[tuple[Path, Path]]:
         return self.samples[index]
 
     def __len__(self) -> int:
@@ -100,8 +99,10 @@ class InputTransform:
         ).add_annotation(annotation=annotation)
 
 
-class ReadBozen(Dataset[ReadBozenConfig, SinglePageDocumentInstance]):
-    def _download_urls(self) -> list[str]:
+class ReadBozen(Dataset[SinglePageDocumentInstance]):
+    """READ Bozen council minutes with line-level PAGE-XML."""
+
+    def _download_urls(self) -> list[UrlSpec]:
         return _DATA_URLS
 
     def _metadata(self) -> DatasetMetadata:
@@ -123,3 +124,17 @@ class ReadBozen(Dataset[ReadBozenConfig, SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
+
+
+def read_bozen(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> ReadBozen:
+    """Build the READ Bozen handwriting dataset."""
+    return ReadBozen(
+        dataset_dir_name="read_bozen",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

@@ -29,7 +29,6 @@ from atria_datasets.parsers import (
     parse_iam_forms,
     parse_iam_split,
 )
-from atria_datasets.registry import dataset_configs
 from atria_datasets.utils import require_manual_path
 
 _HOMEPAGE = "https://fki.tic.heia-fr.ch/databases/iam-handwriting-database"
@@ -58,14 +57,19 @@ def _iam_root(data_dir: str | Path) -> Path:
     )
 
 
-@dataset_configs.register(name="iam")
 @pydantic_dataclass(frozen=True)
 class IAMConfig(DatasetConfig):
+    """Params for the IAM offline handwriting database.
+
+    Attributes:
+        include_bad_segmentations: Keep lines and words whose segmentation the
+            corpus marks as unreliable.
+        crop_to_handwriting: Crop each page to the ground-truth handwriting
+            extent instead of keeping the full scanned form.
+    """
+
     include_bad_segmentations: bool = False
     crop_to_handwriting: bool = True
-
-    def build_module(self, **kwargs: Any) -> IAM:
-        return IAM(config=self, **kwargs)
 
 
 def _bbox(record: IAMRecord, crop_box: tuple[int, int, int, int]) -> np.ndarray:
@@ -220,7 +224,11 @@ class IAMInputTransform:
         )
 
 
-class IAM(Dataset[IAMConfig, SinglePageDocumentInstance]):
+class IAM(Dataset[SinglePageDocumentInstance, IAMConfig]):
+    """IAM offline English handwriting database, supplied manually by the user."""
+
+    __config__ = IAMConfig
+
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
@@ -259,3 +267,29 @@ class IAM(Dataset[IAMConfig, SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return IAMInputTransform()
+
+
+def iam(
+    include_bad_segmentations: bool = False,
+    crop_to_handwriting: bool = True,
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> IAM:
+    """Build the IAM offline English handwriting database.
+
+    Args:
+        include_bad_segmentations: Keep lines and words with unreliable
+            segmentation.
+        crop_to_handwriting: Crop pages to the ground-truth handwriting extent.
+    """
+    return IAM(
+        config=IAMConfig(
+            include_bad_segmentations=include_bad_segmentations,
+            crop_to_handwriting=crop_to_handwriting,
+        ),
+        dataset_dir_name="iam",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

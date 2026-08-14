@@ -1,23 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
-
-from atria_core.datasets import DatasetConfig
 from atria_core.datasets._download._download_manager import UrlSpec
-from pydantic.dataclasses import dataclass as pydantic_dataclass
+from atria_core.types import DatasetSplitType
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
-from atria_datasets.registry import dataset_configs
-
-
-@dataset_configs.register(name="read_konzilsprotokolle")
-@pydantic_dataclass(frozen=True)
-class KonzilsprotokolleConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> Konzilsprotokolle:
-        return Konzilsprotokolle(config=self, **kwargs)
 
 
 class Konzilsprotokolle(PageXMLDataset):
+    """READ German Konzilsprotokolle: historical handwritten council minutes
+    with PAGE-XML ground truth."""
+
     urls = [
         UrlSpec(
             url="https://zenodo.org/records/215383/files/german_konzilsprotokolle.tar.gz",
@@ -27,3 +19,23 @@ class Konzilsprotokolle(PageXMLDataset):
     description = "READ German Konzilsprotokolle: 8,770 historical handwritten lines with PAGE-XML."
     homepage = "https://zenodo.org/records/215383"
     license_name = "CC BY 4.0"
+
+
+def read_konzilsprotokolle(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> Konzilsprotokolle:
+    """Build the READ German Konzilsprotokolle dataset.
+
+    Args:
+        data_dir: Where to read and write data.
+        access_token: Credential for datasets behind authentication.
+        split: Build only this split, instead of every available one.
+    """
+    return Konzilsprotokolle(
+        dataset_dir_name="read_konzilsprotokolle",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

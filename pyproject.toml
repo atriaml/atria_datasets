@@ -7,7 +7,7 @@ name = "atria_datasets"
 version = "0.0.0"                                                                                                    
 description = "Atria Datasets: A collection of datasets for training and evaluating AI agents in the Atria framework."
 readme = "README.md"
-requires-python = "==3.11.*"
+requires-python = ">=3.11"
 license = { file = "LICENSE.txt" }
 authors = [{ name = "Saifullah", email = "saifullah.saifullah@dfki.de" }]
 dependencies = [

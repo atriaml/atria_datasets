@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import dataclasses
+import inspect
 import io
 import json
 import queue
@@ -30,8 +30,7 @@ from fastapi.responses import Response
 from PIL import ImageDraw
 from pydantic import BaseModel, Field
 
-import atria_datasets  # noqa: F401
-from atria_datasets.registry import datasets
+import atria_datasets
 
 
 def _utc_now() -> str:
@@ -48,17 +47,17 @@ def _json_value(value: Any) -> Any:
     return value
 
 
-def _config_fields(config_cls: type[Any]) -> list[dict[str, Any]]:
+def _factory_fields(factory: Any) -> list[dict[str, Any]]:
     fields = []
-    for item in dataclasses.fields(config_cls):
-        default = None
-        required = item.default is dataclasses.MISSING
-        if not required:
-            default = _json_value(item.default)
+    for item in inspect.signature(factory).parameters.values():
+        if item.kind in {item.VAR_POSITIONAL, item.VAR_KEYWORD}:
+            continue
+        required = item.default is inspect.Parameter.empty
+        default = None if required else _json_value(item.default)
         fields.append(
             {
                 "name": item.name,
-                "type": str(item.type),
+                "type": str(item.annotation),
                 "required": required,
                 "default": default,
             }
@@ -390,7 +389,7 @@ class ExplorerState:
             return dataset
 
     def enqueue_job(self, request: PrepareJobRequest) -> dict[str, Any]:
-        if request.name not in datasets.list():
+        if request.name not in atria_datasets.__all__:
             raise HTTPException(status_code=404, detail="Unknown dataset.")
 
         source_dir = _normalize_base_dir(request.source_dir)
@@ -434,13 +433,10 @@ class ExplorerState:
             return
         self.store.mark_running(job_id)
         try:
-            config = datasets.get(job["dataset_name"])(**job["config"])
+            params = dict(job["config"])
             if job["source_dir"]:
-                dataset = config.build_module(
-                    data_dir=str(Path(job["source_dir"]).expanduser().resolve())
-                )
-            else:
-                dataset = config.build_module()
+                params["data_dir"] = str(Path(job["source_dir"]).expanduser().resolve())
+            dataset = getattr(atria_datasets, job["dataset_name"])(**params)
             cached = Cacher(FileStorageType.DELTALAKE).cache(dataset)
         except Exception as error:  # noqa: BLE001
             self.store.mark_failed(job_id, str(error))
@@ -631,8 +627,11 @@ def prepared_datasets(force: bool = False) -> dict[str, Any]:
 def preparation_options() -> dict[str, Any]:
     return {
         "datasets": [
-            {"name": name, "config_fields": _config_fields(config_cls)}
-            for name, config_cls in sorted(datasets.items())
+            {
+                "name": name,
+                "config_fields": _factory_fields(getattr(atria_datasets, name)),
+            }
+            for name in sorted(atria_datasets.__all__)
         ]
     }
 

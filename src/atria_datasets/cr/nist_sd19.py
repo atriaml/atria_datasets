@@ -4,26 +4,17 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
-from atria_core.datasets import Dataset, DatasetConfig
+from atria_core.datasets import Dataset
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
     SinglePageDocumentInstance,
 )
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import IMAGE_SUFFIXES, TextAnnotationTransform
-from atria_datasets.registry import dataset_configs
 from atria_datasets.utils import require_manual_path
 
 _HOMEPAGE = "https://www.nist.gov/srd/nist-special-database-19"
-
-
-@dataset_configs.register(name="nist_sd19")
-@pydantic_dataclass(frozen=True)
-class NISTSD19Config(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> NISTSD19:
-        return NISTSD19(config=self, **kwargs)
 
 
 def _class_name(directory: str) -> str:
@@ -34,7 +25,9 @@ def _class_name(directory: str) -> str:
         return directory
 
 
-class NISTSD19(Dataset[NISTSD19Config, SinglePageDocumentInstance]):
+class NISTSD19(Dataset[SinglePageDocumentInstance]):
+    """NIST SD19 isolated handprinted character images."""
+
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
@@ -70,3 +63,17 @@ class NISTSD19(Dataset[NISTSD19Config, SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return TextAnnotationTransform()
+
+
+def nist_sd19(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> NISTSD19:
+    """Build NIST Special Database 19."""
+    return NISTSD19(
+        dataset_dir_name="nist_sd19",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

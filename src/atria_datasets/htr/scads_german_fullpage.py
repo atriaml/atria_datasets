@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from atria_core.datasets import Dataset, DatasetConfig
+from atria_core.datasets import Dataset
 from atria_core.datasets._download._download_manager import UrlSpec
 from atria_core.types import (
     DatasetMetadata,
@@ -11,20 +11,13 @@ from atria_core.types import (
     SinglePageDocumentInstance,
 )
 from atria_core.types._generic._elements import OCRLevel
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import TextAnnotationTransform, TextFileIterator
-from atria_datasets.registry import dataset_configs
 
 
-@dataset_configs.register(name="scadsai_german_fullpage")
-@pydantic_dataclass(frozen=True)
-class ScaDSAIFullPageConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> ScaDSAIFullPage:
-        return ScaDSAIFullPage(config=self, **kwargs)
+class ScaDSAIFullPage(Dataset[SinglePageDocumentInstance]):
+    """ScaDS.AI German handwritten full pages and transcriptions."""
 
-
-class ScaDSAIFullPage(Dataset[ScaDSAIFullPageConfig, SinglePageDocumentInstance]):
     def _download_urls(self) -> list[UrlSpec]:
         return [
             UrlSpec(
@@ -50,3 +43,17 @@ class ScaDSAIFullPage(Dataset[ScaDSAIFullPageConfig, SinglePageDocumentInstance]
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return TextAnnotationTransform(level=OCRLevel.page)
+
+
+def scadsai_german_fullpage(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> ScaDSAIFullPage:
+    """Build the ScaDS.AI German full-page handwriting dataset."""
+    return ScaDSAIFullPage(
+        dataset_dir_name="scadsai_german_fullpage",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

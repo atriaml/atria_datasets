@@ -90,7 +90,17 @@ def parse_iam_ascii(path: str | Path) -> dict[str, IAMRecord]:
                 )
             try:
                 if fields[7].lstrip("-").isdigit():
-                    sample_id, status, graylevel, components, x, y, width, height, text = fields
+                    (
+                        sample_id,
+                        status,
+                        graylevel,
+                        components,
+                        x,
+                        y,
+                        width,
+                        height,
+                        text,
+                    ) = fields
                     record = IAMRecord(
                         sample_id=sample_id,
                         segmentation_status=status,
@@ -103,7 +113,9 @@ def parse_iam_ascii(path: str | Path) -> dict[str, IAMRecord]:
                         text=text.replace("|", " "),
                     )
                 else:
-                    sample_id, status, graylevel, x, y, width, height, tag, text = fields
+                    sample_id, status, graylevel, x, y, width, height, tag, text = (
+                        fields
+                    )
                     record = IAMRecord(
                         sample_id=sample_id,
                         segmentation_status=status,

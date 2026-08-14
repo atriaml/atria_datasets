@@ -8,20 +8,6 @@ from atria_core.types import DatasetSplitType, SinglePageDocumentInstance
 from atria_core.types._generic._annotations import TranscriptionAnnotation
 from atria_core.types._generic._elements import OCRLevel
 from atria_core.types._generic._image import Image
-from pydantic.dataclasses import dataclass as pydantic_dataclass
-
-from atria_datasets.registry import dataset_configs
-
-
-@dataset_configs.register(name="fhswf_german_handwriting")
-@pydantic_dataclass(frozen=True)
-class FHSWFGermanHandwritingConfig(HuggingfaceDatasetConfig):
-    config_name: str = "default"
-
-    def build_module(self, **kwargs: Any) -> FHSWFGermanHandwriting:
-        return FHSWFGermanHandwriting(
-            repo="fhswf/german_handwriting", config=self, **kwargs
-        )
 
 
 class InputTransform:
@@ -39,8 +25,15 @@ class InputTransform:
 
 
 class FHSWFGermanHandwriting(
-    HuggingfaceDataset[FHSWFGermanHandwritingConfig, SinglePageDocumentInstance]
+    HuggingfaceDataset[SinglePageDocumentInstance, HuggingfaceDatasetConfig]
 ):
+    """FHSWF German handwritten line images and transcriptions."""
+
+    def __init__(
+        self, *, config: HuggingfaceDatasetConfig | None = None, **kwargs: Any
+    ) -> None:
+        super().__init__(repo="fhswf/german_handwriting", config=config, **kwargs)
+
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
 
@@ -48,3 +41,19 @@ class FHSWFGermanHandwriting(
         return enumerate(
             self._builder._as_streaming_dataset_single(self._hf_split_generators[split])
         )
+
+
+def fhswf_german_handwriting(
+    config_name: str = "default",
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> FHSWFGermanHandwriting:
+    """Build the FHSWF German handwriting dataset."""
+    return FHSWFGermanHandwriting(
+        config=HuggingfaceDatasetConfig(config_name=config_name),
+        dataset_dir_name="fhswf_german_handwriting",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

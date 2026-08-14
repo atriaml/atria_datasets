@@ -1,28 +1,30 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 from atria_core.datasets import DatasetConfig
 from atria_core.datasets._download._download_manager import UrlSpec
+from atria_core.types import DatasetSplitType
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
-from atria_datasets.registry import dataset_configs
 
 
-@dataset_configs.register(name="koenigsfelden")
 @pydantic_dataclass(frozen=True)
 class KoenigsfeldenConfig(DatasetConfig):
+    """Params for the Königsfelden PAGE-XML dataset."""
+
     # Zenodo's digitized_documents.zip explicitly excludes the cartularies
     # described by kbs_pageXML.zip. U-17 is therefore the only collection in
     # this release whose PAGE annotations can be paired with the bundled JPGs.
     collection: Literal["kbs", "u17"] = "u17"
 
-    def build_module(self, **kwargs: Any) -> Koenigsfelden:
-        return Koenigsfelden(config=self, **kwargs)
 
+class Koenigsfelden(PageXMLDataset[KoenigsfeldenConfig]):
+    """Königsfelden Abbey and Bailiwick records with PAGE-XML."""
 
-class Koenigsfelden(PageXMLDataset):
+    __config__ = KoenigsfeldenConfig
+
     description = "Charters and records of Königsfelden Abbey and Bailiwick, with PAGE-XML ground truth."
     homepage = "https://zenodo.org/records/5179361"
     license_name = "CC BY 4.0"
@@ -45,3 +47,19 @@ class Koenigsfelden(PageXMLDataset):
                 url_ext=".zip",
             ),
         ]
+
+
+def koenigsfelden(
+    collection: Literal["kbs", "u17"] = "u17",
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> Koenigsfelden:
+    """Build the Königsfelden PAGE-XML dataset."""
+    return Koenigsfelden(
+        config=KoenigsfeldenConfig(collection=collection),
+        dataset_dir_name="koenigsfelden",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

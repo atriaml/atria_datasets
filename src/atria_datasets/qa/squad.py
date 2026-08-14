@@ -3,21 +3,18 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from atria_core.datasets._hf_dataset import HuggingfaceDataset, HuggingfaceDatasetConfig
-from atria_core.types import QAPair, QuestionAnsweringAnnotation, TextInstance
-from pydantic.dataclasses import dataclass as pydantic_dataclass
-
-from atria_datasets.registry import dataset_configs
-
-
-@dataset_configs.register(name="squad")
-@pydantic_dataclass(frozen=True)
-class SquadConfig(HuggingfaceDatasetConfig):
-    def build_module(self, **kwargs: Any) -> Squad:
-        return Squad(repo="squad", config=self, **kwargs)
+from atria_core.datasets._hf_dataset import HuggingfaceDataset
+from atria_core.types import (
+    DatasetSplitType,
+    QAPair,
+    QuestionAnsweringAnnotation,
+    TextInstance,
+)
 
 
 class InputTransform:
+    """Turns a raw SQuAD record into a TextInstance carrying its question-answer pair."""
+
     def __call__(self, sample: dict[str, Any]) -> TextInstance:
         answers = sample["answers"]
         qa_pair = QAPair(
@@ -32,6 +29,25 @@ class InputTransform:
         ).add_annotation(annotation=QuestionAnsweringAnnotation(qa_pairs=[qa_pair]))
 
 
-class Squad(HuggingfaceDataset[SquadConfig, TextInstance]):
+class Squad(HuggingfaceDataset[TextInstance]):
+    """SQuAD: questions posed against Wikipedia passages, with answer spans."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(repo="squad", **kwargs)
+
     def _build_input_transform(self) -> Callable[[Any], TextInstance]:
         return InputTransform()
+
+
+def squad(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> Squad:
+    """Build the SQuAD reading-comprehension dataset."""
+    return Squad(
+        dataset_dir_name="squad",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )

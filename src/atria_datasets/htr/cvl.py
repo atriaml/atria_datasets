@@ -3,9 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, overload
 
-from atria_core.datasets import Dataset, DatasetConfig
+from atria_core.datasets import Dataset
 from atria_core.datasets._download._download_manager import UrlSpec
 from atria_core.types import (
     ClassificationAnnotation,
@@ -17,19 +17,10 @@ from atria_core.types import (
 from atria_core.types._generic._annotations import TranscriptionAnnotation
 from atria_core.types._generic._elements import OCRLevel
 from atria_core.types._generic._image import Image
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 _HOMEPAGE = "https://zenodo.org/records/1492267"
 _ARCHIVE_NAME = "cvl-database-1-1"
 _URLS = [UrlSpec(url=f"{_HOMEPAGE}/files/{_ARCHIVE_NAME}.zip", url_ext=".zip")]
-from atria_datasets.registry import dataset_configs
-
-
-@dataset_configs.register(name="cvl")
-@pydantic_dataclass(frozen=True)
-class CVLConfig(DatasetConfig):
-    def build_module(self, **kwargs: Any) -> CVL:
-        return CVL(config=self, **kwargs)
 
 
 def _dataset_root(data_dir: str | Path) -> Path:
@@ -90,7 +81,15 @@ class CVLWordIterator(Sequence[CVLWordSample]):
                     )
                 )
 
-    def __getitem__(self, index: int) -> CVLWordSample:
+    @overload
+    def __getitem__(self, index: int) -> CVLWordSample: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[CVLWordSample]: ...
+
+    def __getitem__(
+        self, index: int | slice
+    ) -> CVLWordSample | Sequence[CVLWordSample]:
         return self.samples[index]
 
     def __len__(self) -> int:
@@ -114,7 +113,9 @@ class CVLWordTransform:
         )
 
 
-class CVL(Dataset[CVLConfig, SinglePageDocumentInstance]):
+class CVL(Dataset[SinglePageDocumentInstance]):
+    """CVL English/German word crops with writer identities."""
+
     def _download_urls(self) -> list[UrlSpec]:
         return _URLS
 
@@ -147,3 +148,17 @@ class CVL(Dataset[CVLConfig, SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return CVLWordTransform()
+
+
+def cvl(
+    data_dir: str | None = None,
+    access_token: str | None = None,
+    split: DatasetSplitType | None = None,
+) -> CVL:
+    """Build the CVL handwriting dataset."""
+    return CVL(
+        dataset_dir_name="cvl",
+        data_dir=data_dir,
+        access_token=access_token,
+        split=split,
+    )
