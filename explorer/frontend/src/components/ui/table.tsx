@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/shared/utils"
 
 export const Table = ({ className, ...props }: React.HTMLAttributes<HTMLTableElement>) => <div className="relative w-full overflow-auto"><table className={cn("w-full caption-bottom text-sm", className)} {...props} /></div>
 export const TableHeader = (props: React.HTMLAttributes<HTMLTableSectionElement>) => <thead className="border-b" {...props} />

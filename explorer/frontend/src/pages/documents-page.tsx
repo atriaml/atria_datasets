@@ -6,7 +6,7 @@ import { Alert } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { api } from "@/lib/api"
+import { api } from "@/shared/api"
 import type { DocumentSummary, LoadedDataset } from "@/types"
 
 export function DocumentsPage() {

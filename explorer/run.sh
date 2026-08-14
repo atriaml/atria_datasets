@@ -13,7 +13,11 @@ if [[ ! -d explorer/frontend/node_modules ]]; then
   exit 1
 fi
 
-.venv/bin/uvicorn explorer.backend.app:app --host 127.0.0.1 --port 8000 &
+.venv/bin/uvicorn explorer.backend.app:app \
+  --host 127.0.0.1 \
+  --port 8000 \
+  --reload \
+  --reload-dir explorer/backend &
 backend_pid=$!
 trap 'kill "$backend_pid" 2>/dev/null || true' EXIT INT TERM
 

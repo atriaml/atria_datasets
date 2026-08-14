@@ -9,7 +9,7 @@ A small local explorer for prepared datasets discovered from cache snapshots. Th
 
 The frontend uses React, TypeScript, Vite, Tailwind CSS, React Router, and
 local shadcn-style UI primitives. The backend uses FastAPI, snapshot discovery
-from `atria_core`, and the existing dataset registry for preparation jobs.
+from `atria_core`, and the public lazy dataset factories for preparation jobs.
 
 ## Setup
 

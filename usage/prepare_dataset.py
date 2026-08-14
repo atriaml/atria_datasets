@@ -24,15 +24,12 @@ def prepare_dataset(
     """Load and cache a dataset, then inspect the first sample of each split."""
     logger.info("Loading dataset %s...", name)
     dataset = atria_datasets.load_dataset(name, **dataset_kwargs)
-    # TODO: remove the ignore after atria-core's Cacher annotation is updated
-    # from Dataset[Any, T_Sample] to Dataset[T_Sample, Any].
-    cached = Cacher(FileStorageType.DELTALAKE).cache(dataset)  # type: ignore[type-var]
+    cached = Cacher(FileStorageType.DELTALAKE).cache(dataset)
     logger.info("Cached dataset:\n%s", cached)
 
     for split, split_iterator in cached.split_iterators.items():
         samples: Any = split_iterator
         sample_count = len(samples)
-        print(f"{name}[{split.value}]: {sample_count} samples")
         if not visualize_samples or sample_count == 0:
             continue
 
@@ -40,6 +37,7 @@ def prepare_dataset(
         sample_dir = Path(output_dir) / name / split.value
         sample_dir.mkdir(parents=True, exist_ok=True)
         visualize(sample, output_dir=str(sample_dir))
+        logger.info(f"First sample of split [{split}]:\n {sample}")
 
 
 def main() -> None:

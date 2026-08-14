@@ -227,8 +227,6 @@ class IAMInputTransform:
 class IAM(Dataset[SinglePageDocumentInstance, IAMConfig]):
     """IAM offline English handwriting database, supplied manually by the user."""
 
-    __config__ = IAMConfig
-
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:

@@ -29,8 +29,6 @@ class IAMHistDBConfig(DatasetConfig):
 class IAMHistDB(Dataset[SinglePageDocumentInstance, IAMHistDBConfig]):
     """IAM historical line images and paired transcriptions."""
 
-    __config__ = IAMHistDBConfig
-
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:

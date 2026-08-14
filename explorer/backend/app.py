@@ -32,6 +32,8 @@ from pydantic import BaseModel, Field
 
 import atria_datasets
 
+_RUNTIME_FACTORY_FIELDS = {"access_token", "data_dir", "split"}
+
 
 def _utc_now() -> str:
     return datetime.now(UTC).isoformat()
@@ -51,6 +53,8 @@ def _factory_fields(factory: Any) -> list[dict[str, Any]]:
     fields = []
     for item in inspect.signature(factory).parameters.values():
         if item.kind in {item.VAR_POSITIONAL, item.VAR_KEYWORD}:
+            continue
+        if item.name in _RUNTIME_FACTORY_FIELDS:
             continue
         required = item.default is inspect.Parameter.empty
         default = None if required else _json_value(item.default)
@@ -437,7 +441,10 @@ class ExplorerState:
             if job["source_dir"]:
                 params["data_dir"] = str(Path(job["source_dir"]).expanduser().resolve())
             dataset = getattr(atria_datasets, job["dataset_name"])(**params)
-            cached = Cacher(FileStorageType.DELTALAKE).cache(dataset)
+            cache_dir = Path(job["output_root"]) / job["dataset_name"]
+            cached = Cacher(FileStorageType.DELTALAKE).cache(
+                dataset, data_dir=str(cache_dir)
+            )
         except Exception as error:  # noqa: BLE001
             self.store.mark_failed(job_id, str(error))
             return

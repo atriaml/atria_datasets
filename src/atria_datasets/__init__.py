@@ -7,7 +7,7 @@ import lazy_loader as lazy
 
 if TYPE_CHECKING:
     from atria_core.datasets import Dataset
-    from atria_core.types import BaseDataInstance, DatasetSplitType
+    from atria_core.types import DataInstance, DatasetSplitType
 
     from .cr.nist_sd19 import nist_sd19 as nist_sd19
     from .htr.austrian_newspapers import austrian_newspapers as austrian_newspapers
@@ -44,7 +44,7 @@ def load_dataset(
     access_token: str | None = None,
     split: DatasetSplitType | None = None,
     **kwargs: Any,
-) -> Dataset[BaseDataInstance]:
+) -> Dataset:
     """Build a named dataset with shared runtime and dataset-specific options."""
     if name not in __all__:
         available = ", ".join(sorted(__all__))

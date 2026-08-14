@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { api } from "@/lib/api"
+import { api } from "@/shared/api"
 import type { DocumentPage as DocumentPageType, LoadedDataset } from "@/types"
 
 const levelColors: Record<string, string> = {
