@@ -30,17 +30,3 @@ class Bentham(PageXMLDataset):
         DatasetSplitType.validation: ("devel", "valid"),
         DatasetSplitType.test: ("test",),
     }
-
-
-def bentham(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> Bentham:
-    """Build the Bentham handwritten manuscript dataset."""
-    return Bentham(
-        dataset_dir_name="bentham",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

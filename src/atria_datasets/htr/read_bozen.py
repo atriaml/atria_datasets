@@ -124,17 +124,3 @@ class ReadBozen(Dataset[SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
-
-
-def read_bozen(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> ReadBozen:
-    """Build the READ Bozen handwriting dataset."""
-    return ReadBozen(
-        dataset_dir_name="read_bozen",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

@@ -27,17 +27,3 @@ class AustrianNewspapers(PageXMLDataset):
         DatasetSplitType.train: ("train",),
         DatasetSplitType.validation: ("valid", "val"),
     }
-
-
-def austrian_newspapers(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> AustrianNewspapers:
-    """Build the Austrian newspapers OCR ground-truth dataset."""
-    return AustrianNewspapers(
-        dataset_dir_name="austrian_newspapers",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

@@ -36,26 +36,6 @@ class ICDAR2017ReadHTRA(PageXMLDataset):
     }
 
 
-def icdar2017_read_htr_a(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> ICDAR2017ReadHTRA:
-    """Build the ICDAR2017 READ HTR traditional benchmark (Train-A/Test-A).
-
-    Args:
-        data_dir: Where to read and write data.
-        access_token: Credential for datasets behind authentication.
-        split: Build only this split, instead of every available one.
-    """
-    return ICDAR2017ReadHTRA(
-        dataset_dir_name="icdar2017_read_htr_a",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )
-
-
 class ICDAR2017ReadHTRB(PageXMLDataset):
     """ICDAR2017 READ HTR advanced benchmark: page-level Train-B and
     region-only Test-B1/Test-B2 subsets."""
@@ -95,23 +75,3 @@ class ICDAR2017ReadHTRB(PageXMLDataset):
         DatasetSplitType.validation: ("test-b1", "test_b1"),
         DatasetSplitType.test: ("test-b2", "test_b2"),
     }
-
-
-def icdar2017_read_htr_b(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> ICDAR2017ReadHTRB:
-    """Build the ICDAR2017 READ HTR advanced benchmark (Train-B/Test-B).
-
-    Args:
-        data_dir: Where to read and write data.
-        access_token: Credential for datasets behind authentication.
-        split: Build only this split, instead of every available one.
-    """
-    return ICDAR2017ReadHTRB(
-        dataset_dir_name="icdar2017_read_htr_b",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

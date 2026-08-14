@@ -258,17 +258,3 @@ class IMGUR5K(Dataset[SinglePageDocumentInstance]):
             ).add_annotation(annotation=annotation)
 
         return transform
-
-
-def imgur5k(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> IMGUR5K:
-    """Build the IMGUR5K handwriting dataset."""
-    return IMGUR5K(
-        dataset_dir_name="imgur5k",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

@@ -17,7 +17,6 @@ from atria_core.types import (
 from atria_core.types._generic._annotations import TranscriptionAnnotation
 from atria_core.types._generic._elements import OCRLevel
 from atria_core.types._generic._image import Image
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 _DATA_URLS = [
     UrlSpec(
@@ -44,7 +43,6 @@ def _row_text(row: dict[str, str], ocr_level: OCRLevel) -> str:
     raise ValueError(f"Missing transcription field for {ocr_level.name} sample: {row}")
 
 
-@pydantic_dataclass(frozen=True)
 class ScaDSAIConfig(DatasetConfig):
     """Params for the ScaDS.AI German handwriting dataset."""
 
@@ -130,19 +128,3 @@ class ScaDSAI(Dataset[SinglePageDocumentInstance, ScaDSAIConfig]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform(ocr_level=self.config.level)
-
-
-def scadsai_german_handwriting(
-    level: OCRLevel = OCRLevel.line,
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> ScaDSAI:
-    """Build the ScaDS.AI German handwriting dataset."""
-    return ScaDSAI(
-        config=ScaDSAIConfig(level=level),
-        dataset_dir_name="scadsai_german_handwriting",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

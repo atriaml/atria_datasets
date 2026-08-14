@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from atria_core.datasets import Cacher, FileStorageType
+from atria_core.datasets import DatasetBuilder, FileStorageType
 from atria_core.logger import get_logger
 from atria_core.visualizers import visualize
 
@@ -23,8 +23,12 @@ def prepare_dataset(
 ) -> None:
     """Load and cache a dataset, then inspect the first sample of each split."""
     logger.info("Loading dataset %s...", name)
-    dataset = atria_datasets.load_dataset(name, **dataset_kwargs)
-    cached = Cacher(FileStorageType.DELTALAKE).cache(dataset)
+    cached = (
+        DatasetBuilder()
+        .load(name, **dataset_kwargs)
+        .cache(FileStorageType.DELTALAKE)
+        .build()
+    )
     logger.info("Cached dataset:\n%s", cached)
 
     for split, split_iterator in cached.split_iterators.items():
@@ -37,13 +41,13 @@ def prepare_dataset(
         sample_dir = Path(output_dir) / name / split.value
         sample_dir.mkdir(parents=True, exist_ok=True)
         visualize(sample, output_dir=str(sample_dir))
-        logger.info(f"First sample of split [{split}]:\n {sample}")
+        logger.info(f"First sample of split `{split}`:\n {sample}")
 
 
 def main() -> None:
-    """Parse a dataset factory name and run its preparation pipeline."""
+    """Parse a registered dataset name and run its preparation pipeline."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("name", choices=sorted(atria_datasets.__all__))
+    parser.add_argument("name", choices=sorted(atria_datasets.datasets.list()))
     args = parser.parse_args()
     prepare_dataset(args.name)
 

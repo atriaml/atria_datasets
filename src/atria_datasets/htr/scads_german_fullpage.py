@@ -43,17 +43,3 @@ class ScaDSAIFullPage(Dataset[SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return TextAnnotationTransform(level=OCRLevel.page)
-
-
-def scadsai_german_fullpage(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> ScaDSAIFullPage:
-    """Build the ScaDS.AI German full-page handwriting dataset."""
-    return ScaDSAIFullPage(
-        dataset_dir_name="scadsai_german_fullpage",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

@@ -41,19 +41,3 @@ class FHSWFGermanHandwriting(
         return enumerate(
             self._builder._as_streaming_dataset_single(self._hf_split_generators[split])
         )
-
-
-def fhswf_german_handwriting(
-    config_name: str = "default",
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> FHSWFGermanHandwriting:
-    """Build the FHSWF German handwriting dataset."""
-    return FHSWFGermanHandwriting(
-        config=HuggingfaceDatasetConfig(config_name=config_name),
-        dataset_dir_name="fhswf_german_handwriting",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

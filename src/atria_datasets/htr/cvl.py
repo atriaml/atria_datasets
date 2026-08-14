@@ -148,17 +148,3 @@ class CVL(Dataset[SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return CVLWordTransform()
-
-
-def cvl(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> CVL:
-    """Build the CVL handwriting dataset."""
-    return CVL(
-        dataset_dir_name="cvl",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

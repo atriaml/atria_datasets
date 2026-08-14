@@ -154,17 +154,3 @@ class GNHK(Dataset[SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
-
-
-def gnhk(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> GNHK:
-    """Build the GoodNotes Handwriting Kollection dataset."""
-    return GNHK(
-        dataset_dir_name="gnhk",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

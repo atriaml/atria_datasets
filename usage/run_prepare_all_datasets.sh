@@ -7,7 +7,7 @@ cd "${PROJECT_DIR}"
 
 mapfile -t DATASET_NAMES < <(
     uv run python -c \
-        'import atria_datasets; print(*sorted(atria_datasets.__all__), sep="\n")'
+        'import atria_datasets; print(*sorted(atria_datasets.datasets.list()), sep="\n")'
 )
 
 FAILED_DATASETS=()

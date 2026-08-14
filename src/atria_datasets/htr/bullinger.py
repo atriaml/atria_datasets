@@ -64,17 +64,3 @@ class Bullinger(Dataset[SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return TextAnnotationTransform(level=OCRLevel.line)
-
-
-def bullinger(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> Bullinger:
-    """Build the Bullinger historical handwriting dataset."""
-    return Bullinger(
-        dataset_dir_name="bullinger",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

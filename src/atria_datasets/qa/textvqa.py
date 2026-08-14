@@ -6,7 +6,6 @@ from typing import Any
 
 from atria_core.datasets._hf_dataset import HuggingfaceDataset
 from atria_core.types import (
-    DatasetSplitType,
     QAPair,
     QuestionAnsweringAnnotation,
     SinglePageDocumentInstance,
@@ -45,17 +44,3 @@ class TextVqa(HuggingfaceDataset[SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform(self.data_dir / _IMAGES_SUBDIR)
-
-
-def textvqa(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> TextVqa:
-    """Build the TextVQA visual question-answering dataset."""
-    return TextVqa(
-        dataset_dir_name="textvqa",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

@@ -4,13 +4,10 @@ from typing import Literal
 
 from atria_core.datasets import DatasetConfig
 from atria_core.datasets._download._download_manager import UrlSpec
-from atria_core.types import DatasetSplitType
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 
 
-@pydantic_dataclass(frozen=True)
 class KoenigsfeldenConfig(DatasetConfig):
     """Params for the Königsfelden PAGE-XML dataset."""
 
@@ -45,19 +42,3 @@ class Koenigsfelden(PageXMLDataset[KoenigsfeldenConfig]):
                 url_ext=".zip",
             ),
         ]
-
-
-def koenigsfelden(
-    collection: Literal["kbs", "u17"] = "u17",
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> Koenigsfelden:
-    """Build the Königsfelden PAGE-XML dataset."""
-    return Koenigsfelden(
-        config=KoenigsfeldenConfig(collection=collection),
-        dataset_dir_name="koenigsfelden",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

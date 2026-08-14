@@ -5,7 +5,6 @@ from typing import Literal
 from atria_core.datasets import DatasetConfig
 from atria_core.datasets._download._download_manager import UrlSpec
 from atria_core.types import DatasetSplitType
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import PageXMLIterator
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
@@ -13,7 +12,6 @@ from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 _DTA_MARKERS = ("libelt", "hufeland", "erbkam", "auerbach")
 
 
-@pydantic_dataclass(frozen=True)
 class GermanKurrent19CConfig(DatasetConfig):
     """Params for the German Kurrent 19th-century dataset."""
 
@@ -60,19 +58,3 @@ class GermanKurrent19C(PageXMLDataset[GermanKurrent19CConfig]):
                 license="CC BY 4.0",
             )
         return metadata
-
-
-def german_kurrent_19c(
-    license_subset: Literal["cc_by_only", "all"] = "cc_by_only",
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> GermanKurrent19C:
-    """Build the German Kurrent 19th-century dataset."""
-    return GermanKurrent19C(
-        config=GermanKurrent19CConfig(license_subset=license_subset),
-        dataset_dir_name="german_kurrent_19c",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

@@ -4,12 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from atria_core.datasets._hf_dataset import HuggingfaceDataset
-from atria_core.types import (
-    DatasetSplitType,
-    QAPair,
-    QuestionAnsweringAnnotation,
-    TextInstance,
-)
+from atria_core.types import QAPair, QuestionAnsweringAnnotation, TextInstance
 
 
 class InputTransform:
@@ -37,17 +32,3 @@ class Squad(HuggingfaceDataset[TextInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], TextInstance]:
         return InputTransform()
-
-
-def squad(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> Squad:
-    """Build the SQuAD reading-comprehension dataset."""
-    return Squad(
-        dataset_dir_name="squad",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

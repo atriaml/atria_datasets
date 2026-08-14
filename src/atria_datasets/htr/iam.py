@@ -20,7 +20,6 @@ from atria_core.types import (
 from atria_core.types._generic._annotations import OCRAnnotation
 from atria_core.types._generic._elements import OCRLevel
 from atria_core.types._generic._image import Image
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import get_image_size
 from atria_datasets.parsers import (
@@ -57,7 +56,6 @@ def _iam_root(data_dir: str | Path) -> Path:
     )
 
 
-@pydantic_dataclass(frozen=True)
 class IAMConfig(DatasetConfig):
     """Params for the IAM offline handwriting database.
 
@@ -265,29 +263,3 @@ class IAM(Dataset[SinglePageDocumentInstance, IAMConfig]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return IAMInputTransform()
-
-
-def iam(
-    include_bad_segmentations: bool = False,
-    crop_to_handwriting: bool = True,
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> IAM:
-    """Build the IAM offline English handwriting database.
-
-    Args:
-        include_bad_segmentations: Keep lines and words with unreliable
-            segmentation.
-        crop_to_handwriting: Crop pages to the ground-truth handwriting extent.
-    """
-    return IAM(
-        config=IAMConfig(
-            include_bad_segmentations=include_bad_segmentations,
-            crop_to_handwriting=crop_to_handwriting,
-        ),
-        dataset_dir_name="iam",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

@@ -13,8 +13,10 @@ def cli() -> None:
 
 @cli.command("list")
 def list_datasets() -> None:
-    """Print the available lazily imported dataset factories."""
-    logger.info("Available datasets:\n%s", "\n".join(atria_datasets.__all__))
+    """Print the names registered with the dataset registry."""
+    logger.info(
+        "Available datasets:\n%s", "\n".join(sorted(atria_datasets.datasets.list()))
+    )
 
 
 def main() -> None:

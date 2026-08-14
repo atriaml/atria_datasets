@@ -63,17 +63,3 @@ class NISTSD19(Dataset[SinglePageDocumentInstance]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return TextAnnotationTransform()
-
-
-def nist_sd19(
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> NISTSD19:
-    """Build NIST Special Database 19."""
-    return NISTSD19(
-        dataset_dir_name="nist_sd19",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

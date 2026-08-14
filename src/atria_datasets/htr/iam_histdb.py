@@ -11,7 +11,6 @@ from atria_core.types import (
     SinglePageDocumentInstance,
 )
 from atria_core.types._generic._elements import OCRLevel
-from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from atria_datasets.htr._common import TextAnnotationTransform, TextFileIterator
 from atria_datasets.utils import require_manual_path
@@ -19,7 +18,6 @@ from atria_datasets.utils import require_manual_path
 _HOMEPAGE = "https://fki.tic.heia-fr.ch/databases/iam-historical-document-database"
 
 
-@pydantic_dataclass(frozen=True)
 class IAMHistDBConfig(DatasetConfig):
     """Params for the IAM Historical Document Database."""
 
@@ -59,19 +57,3 @@ class IAMHistDB(Dataset[SinglePageDocumentInstance, IAMHistDBConfig]):
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return TextAnnotationTransform(level=OCRLevel.line)
-
-
-def iam_histdb(
-    collection: Literal["washington", "parzival", "saint_gall"] = "washington",
-    data_dir: str | None = None,
-    access_token: str | None = None,
-    split: DatasetSplitType | None = None,
-) -> IAMHistDB:
-    """Build an IAM Historical Document Database collection."""
-    return IAMHistDB(
-        config=IAMHistDBConfig(collection=collection),
-        dataset_dir_name="iam_histdb",
-        data_dir=data_dir,
-        access_token=access_token,
-        split=split,
-    )

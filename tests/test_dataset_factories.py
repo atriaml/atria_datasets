@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+import importlib
 from pathlib import Path
-from typing import Any, get_type_hints
+from typing import Any
 
 import pytest
 from atria_core.datasets import Dataset
@@ -10,11 +10,12 @@ from atria_core.types import DatasetSplitType
 from atria_core.types._generic._elements import OCRLevel
 
 import atria_datasets
+from atria_datasets import _DATASET_IMPORT_PATHS
 
-FactoryCase = tuple[str, dict[str, Any], dict[str, Any]]
+DatasetCase = tuple[str, dict[str, Any], dict[str, Any]]
 
 
-FACTORY_CASES: list[FactoryCase] = [
+DATASET_CASES: list[DatasetCase] = [
     ("nist_sd19", {}, {}),
     ("austrian_newspapers", {}, {}),
     ("bentham", {}, {}),
@@ -43,8 +44,13 @@ FACTORY_CASES: list[FactoryCase] = [
 ]
 
 
-def test_factory_cases_cover_public_namespace() -> None:
-    assert {case[0] for case in FACTORY_CASES} == set(atria_datasets.__all__)
+def _registered_class(name: str) -> type[Dataset[Any, Any]]:
+    module_name, _, attribute = _DATASET_IMPORT_PATHS[name].rpartition(".")
+    return getattr(importlib.import_module(module_name), attribute)
+
+
+def test_dataset_cases_cover_registered_names() -> None:
+    assert {case[0] for case in DATASET_CASES} == set(atria_datasets.datasets.list())
 
 
 @pytest.fixture
@@ -70,25 +76,27 @@ def stub_dataset_build(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("factory_name", "factory_kwargs", "expected_config"),
-    FACTORY_CASES,
-    ids=[case[0] for case in FACTORY_CASES],
+    ("dataset_name", "dataset_kwargs", "expected_config"),
+    DATASET_CASES,
+    ids=[case[0] for case in DATASET_CASES],
 )
-def test_dataset_factory(
-    factory_name: str,
-    factory_kwargs: dict[str, Any],
+def test_dataset_registry_create(
+    dataset_name: str,
+    dataset_kwargs: dict[str, Any],
     expected_config: dict[str, Any],
     stub_dataset_build: None,
 ) -> None:
-    factory: Callable[..., Dataset[Any, Any]] = getattr(atria_datasets, factory_name)
-    expected_type = get_type_hints(factory)["return"]
+    expected_type = _registered_class(dataset_name)
 
-    dataset = factory(
-        **factory_kwargs, access_token="test-token", split=DatasetSplitType.train
+    dataset = atria_datasets.datasets.create(
+        dataset_name,
+        **dataset_kwargs,
+        access_token="test-token",
+        split=DatasetSplitType.train,
     )
 
     assert type(dataset) is expected_type
-    assert dataset.data_dir.name == factory_name
+    assert dataset.data_dir.name == dataset_name
     assert dataset._factory_test_build_args == (  # type: ignore[attr-defined]
         str(dataset.data_dir),
         DatasetSplitType.train,
@@ -98,10 +106,10 @@ def test_dataset_factory(
         assert getattr(dataset.config, field_name) == expected_value
 
 
-def test_load_dataset_forwards_shared_and_specific_arguments(
+def test_dataset_registry_create_forwards_shared_and_specific_arguments(
     stub_dataset_build: None,
 ) -> None:
-    dataset = atria_datasets.load_dataset(
+    dataset = atria_datasets.datasets.create(
         "iam",
         access_token="test-token",
         split=DatasetSplitType.validation,
