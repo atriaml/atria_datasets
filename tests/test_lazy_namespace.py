@@ -27,7 +27,7 @@ assert not any(
     for name in sys.modules
 )
 
-atria_datasets.datasets._get_class("squad")
+atria_datasets.datasets.get("squad")
 assert "atria_datasets.qa.squad" in sys.modules
 assert "atria_datasets.htr.iam" not in sys.modules
 """

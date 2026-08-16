@@ -9,6 +9,8 @@ class Konzilsprotokolle(PageXMLDataset):
     """READ German Konzilsprotokolle: historical handwritten council minutes
     with PAGE-XML ground truth."""
 
+    __module_name__ = "read_konzilsprotokolle"
+
     urls = [
         UrlSpec(
             url="https://zenodo.org/records/215383/files/german_konzilsprotokolle.tar.gz",

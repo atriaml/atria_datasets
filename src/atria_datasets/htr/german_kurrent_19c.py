@@ -21,6 +21,8 @@ class GermanKurrent19CConfig(DatasetConfig):
 class GermanKurrent19C(PageXMLDataset[GermanKurrent19CConfig]):
     """German Kurrent pages and lines from 19th-century sources."""
 
+    __module_name__ = "german_kurrent_19c"
+
     urls = [
         UrlSpec(
             url="https://zenodo.org/records/17252677/files/data.zip", url_ext=".zip"

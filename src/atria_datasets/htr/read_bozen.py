@@ -102,6 +102,8 @@ class InputTransform:
 class ReadBozen(Dataset[SinglePageDocumentInstance]):
     """READ Bozen council minutes with line-level PAGE-XML."""
 
+    __module_name__ = "read_bozen"
+
     def _download_urls(self) -> list[UrlSpec]:
         return _DATA_URLS
 

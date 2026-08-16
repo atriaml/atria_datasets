@@ -29,6 +29,8 @@ class FHSWFGermanHandwriting(
 ):
     """FHSWF German handwritten line images and transcriptions."""
 
+    __module_name__ = "fhswf_german_handwriting"
+
     def __init__(
         self, *, config: HuggingfaceDatasetConfig | None = None, **kwargs: Any
     ) -> None:

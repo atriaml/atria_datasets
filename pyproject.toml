@@ -43,7 +43,7 @@ dependencies = [
     "scikit-learn>=1.7.0",
     "textdistance>=4.2.0",
     "tqdm>=4.67.1",
-    "transformers==4.53.3",
+    "transformers>=4.53.3",
     "webdataset>=1.0.2",
     "wids>=0.1.11",
 ]
@@ -77,7 +77,7 @@ exclude_lines = [
 [tool.ruff]
 # cover and extend the default config in https=//docs.astral.sh/ruff/configuration/
 extend-exclude = ["alembic"]
-target-version = "py310"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [

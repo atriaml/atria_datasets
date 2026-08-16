@@ -10,6 +10,8 @@ class Bentham(PageXMLDataset):
     """Bentham handwritten manuscript pages with PAGE-XML ground truth, from
     the ImageCLEF 2016 release."""
 
+    __module_name__ = "bentham"
+
     urls = [
         UrlSpec(url=f"https://zenodo.org/records/52994/files/{name}", url_ext=".zip")
         for name in (

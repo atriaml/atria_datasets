@@ -20,6 +20,8 @@ class KoenigsfeldenConfig(DatasetConfig):
 class Koenigsfelden(PageXMLDataset[KoenigsfeldenConfig]):
     """Königsfelden Abbey and Bailiwick records with PAGE-XML."""
 
+    __module_name__ = "koenigsfelden"
+
     description = "Charters and records of Königsfelden Abbey and Bailiwick, with PAGE-XML ground truth."
     homepage = "https://zenodo.org/records/5179361"
     license_name = "CC BY 4.0"

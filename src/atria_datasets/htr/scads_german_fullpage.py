@@ -18,6 +18,8 @@ from atria_datasets.htr._common import TextAnnotationTransform, TextFileIterator
 class ScaDSAIFullPage(Dataset[SinglePageDocumentInstance]):
     """ScaDS.AI German handwritten full pages and transcriptions."""
 
+    __module_name__ = "scadsai_german_fullpage"
+
     def _download_urls(self) -> list[UrlSpec]:
         return [
             UrlSpec(

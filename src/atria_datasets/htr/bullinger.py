@@ -27,6 +27,8 @@ _TSV = {
 class Bullinger(Dataset[SinglePageDocumentInstance]):
     """BullingerDB historical line images with writer-disjoint splits."""
 
+    __module_name__ = "bullinger"
+
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:

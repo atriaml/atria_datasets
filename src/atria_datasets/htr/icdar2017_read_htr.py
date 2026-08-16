@@ -10,6 +10,8 @@ class ICDAR2017ReadHTRA(PageXMLDataset):
     """ICDAR2017 READ HTR traditional benchmark: the fully line-annotated
     Train-A and Test-A subsets."""
 
+    __module_name__ = "icdar2017_read_htr_a"
+
     # Train-A and Test-A are the fully line-annotated HTR benchmark subsets.
     urls = [
         UrlSpec(
@@ -39,6 +41,8 @@ class ICDAR2017ReadHTRA(PageXMLDataset):
 class ICDAR2017ReadHTRB(PageXMLDataset):
     """ICDAR2017 READ HTR advanced benchmark: page-level Train-B and
     region-only Test-B1/Test-B2 subsets."""
+
+    __module_name__ = "icdar2017_read_htr_b"
 
     # Train-B has page-level transcripts but no line geometry. Test-B1 and
     # Test-B2 expose regions only and are intended for end-to-end inference.

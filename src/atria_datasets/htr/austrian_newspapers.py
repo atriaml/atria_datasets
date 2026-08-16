@@ -10,7 +10,8 @@ class AustrianNewspapers(PageXMLDataset):
     """NewsEye/READ OCR ground truth from Austrian newspapers: historical
     Fraktur print with PAGE-XML transcriptions."""
 
-    urls = [
+    __module_name__ = "austrian_newspapers"
+    urls = [  # noqa: RUF012
         UrlSpec(
             url="https://zenodo.org/records/3387369/files/TrainingSet_ONB_Newseye_GT_M1%2B.zip",
             url_ext=".zip",

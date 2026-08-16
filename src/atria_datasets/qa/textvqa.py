@@ -39,6 +39,8 @@ class InputTransform:
 class TextVqa(HuggingfaceDataset[SinglePageDocumentInstance]):
     """TextVQA: questions answered from text visible in images."""
 
+    __module_name__ = "textvqa"
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(repo="lmms-lab/textvqa", **kwargs)
 

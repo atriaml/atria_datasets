@@ -9,6 +9,8 @@ class StABSRatsbuecher(PageXMLDataset):
     """Staatsarchiv Basel-Stadt Ratsbuch O 10 / Urfehdenbuch X: handwritten
     council records with PAGE-XML ground truth."""
 
+    __module_name__ = "stabs_ratsbuecher_o10"
+
     urls = [
         UrlSpec(
             url="https://zenodo.org/records/5153263/files/StABS_Ratsbuch_O_10.zip",

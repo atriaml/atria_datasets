@@ -116,6 +116,8 @@ class CVLWordTransform:
 class CVL(Dataset[SinglePageDocumentInstance]):
     """CVL English/German word crops with writer identities."""
 
+    __module_name__ = "cvl"
+
     def _download_urls(self) -> list[UrlSpec]:
         return _URLS
 

@@ -148,6 +148,8 @@ def _download_images(info_dir: Path, image_dir: Path) -> tuple[int, int]:
 class IMGUR5K(Dataset[SinglePageDocumentInstance]):
     """IMGUR5K in-the-wild handwriting with rotated word boxes."""
 
+    __module_name__ = "imgur5k"
+
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:

@@ -136,6 +136,8 @@ class InputTransform:
 class GNHK(Dataset[SinglePageDocumentInstance]):
     """GoodNotes handwriting images with word-level polygons."""
 
+    __module_name__ = "gnhk"
+
     def _download_urls(self) -> list[UrlSpec]:
         return _DATA_URLS
 

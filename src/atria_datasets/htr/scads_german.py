@@ -110,6 +110,8 @@ class InputTransform:
 class ScaDSAI(Dataset[SinglePageDocumentInstance, ScaDSAIConfig]):
     """ScaDS.AI German line- and word-level handwriting."""
 
+    __module_name__ = "scadsai_german_handwriting"
+
     def _download_urls(self) -> list[UrlSpec]:
         return _DATA_URLS
 

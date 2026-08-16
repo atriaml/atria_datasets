@@ -28,6 +28,8 @@ def _class_name(directory: str) -> str:
 class NISTSD19(Dataset[SinglePageDocumentInstance]):
     """NIST SD19 isolated handprinted character images."""
 
+    __module_name__ = "nist_sd19"
+
     def _download(
         self, data_dir: str, access_token: str | None = None
     ) -> dict[str, Path]:
