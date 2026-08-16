@@ -6,14 +6,13 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any, overload
 
-from atria_core.datasets import Dataset
-from atria_core.datasets._download._download_manager import UrlSpec
+from atria_core.datasets import Dataset, UrlSpec
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
+    Image,
     SinglePageDocumentInstance,
 )
-from atria_core.types._generic._image import Image
 
 from atria_datasets.parsers import parse_page_xml
 

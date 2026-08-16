@@ -3,11 +3,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from atria_core.datasets._hf_dataset import HuggingfaceDataset, HuggingfaceDatasetConfig
-from atria_core.types import DatasetSplitType, SinglePageDocumentInstance
-from atria_core.types._generic._annotations import TranscriptionAnnotation
-from atria_core.types._generic._elements import OCRLevel
-from atria_core.types._generic._image import Image
+from atria_core.datasets import HuggingfaceDataset, HuggingfaceDatasetConfig
+from atria_core.types import (
+    DatasetSplitType,
+    Image,
+    OCRLevel,
+    SinglePageDocumentInstance,
+    TranscriptionAnnotation,
+)
 
 
 class InputTransform:

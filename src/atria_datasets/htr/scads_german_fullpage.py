@@ -3,14 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from atria_core.datasets import Dataset
-from atria_core.datasets._download._download_manager import UrlSpec
+from atria_core.datasets import Dataset, UrlSpec
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
+    OCRLevel,
     SinglePageDocumentInstance,
 )
-from atria_core.types._generic._elements import OCRLevel
 
 from atria_datasets.htr._common import TextAnnotationTransform, TextFileIterator
 

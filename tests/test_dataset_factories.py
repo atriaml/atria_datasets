@@ -6,8 +6,7 @@ from typing import Any
 
 import pytest
 from atria_core.datasets import Dataset
-from atria_core.types import DatasetSplitType
-from atria_core.types._generic._elements import OCRLevel
+from atria_core.types import DatasetSplitType, OCRLevel
 
 import atria_datasets
 from atria_datasets import _DATASET_IMPORT_PATHS

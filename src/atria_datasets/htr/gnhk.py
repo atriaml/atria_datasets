@@ -8,15 +8,15 @@ from pathlib import Path
 from typing import Any, cast, overload
 
 import numpy as np
-from atria_core.datasets import Dataset
-from atria_core.datasets._download._download_manager import UrlSpec
+from atria_core.datasets import Dataset, UrlSpec
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
+    Image,
+    OCRAnnotation,
     SinglePageDocumentInstance,
 )
-from atria_core.types._generic._annotations import OCRAnnotation
-from atria_core.types._generic._image import Image
+from numpy.typing import NDArray
 
 from atria_datasets.htr._common import get_image_size
 
@@ -38,7 +38,7 @@ _LICENSE = "CC BY 4.0"
 
 def _parse_manifest(
     manifest_path: Path,
-) -> dict[str, list[tuple[str, np.ndarray, np.ndarray]]]:
+) -> dict[str, list[tuple[str, NDArray[np.float64], NDArray[np.float64]]]]:
     """image name -> list of (text, absolute-pixel bbox (4,), polygon (P, 2)).
 
     GNHK's SageMaker-Ground-Truth-style JSONL has no line-grouping field --
@@ -104,9 +104,12 @@ class SplitIterator(Sequence[tuple[Path, OCRAnnotation]]):
             width, height = get_image_size(image_path=image_path, exif_rotation=True)
 
             texts = [text for text, _, _ in words]
-            bboxes = np.stack([bbox for _, bbox, _ in words]) / np.array(
-                [width, height, width, height]
-            )
+            bboxes = np.stack([bbox for _, bbox, _ in words]) / np.array([
+                width,
+                height,
+                width,
+                height,
+            ])
             polygons = [polygon / np.array([width, height]) for _, _, polygon in words]
             annotation = cast(
                 OCRAnnotation,

@@ -14,9 +14,9 @@ import re
 from pathlib import Path
 
 import numpy as np
-from atria_core.types._generic._annotations import OCRAnnotation
-from atria_core.types._generic._elements import OCRLevel
+from atria_core.types import OCRAnnotation, OCRLevel
 from lxml import etree
+from numpy.typing import NDArray
 
 _ROOT_PARENT = -1
 _BARE_AMPERSAND = re.compile(rb"&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9A-Fa-f]+;)")
@@ -30,13 +30,13 @@ def _parse_xml(xml_path: Path) -> etree._Element:
     return etree.fromstring(text=xml)
 
 
-def _parse_points(points: str) -> np.ndarray:
+def _parse_points(points: str) -> NDArray[np.float64]:
     """`"x1,y1 x2,y2 ..."` -> (P, 2) float array."""
     coords = [tuple(map(float, pair.split(","))) for pair in points.split()]
     return np.asarray(coords, dtype=np.float64)
 
 
-def _coords(element: etree._Element, ns: dict[str, str]) -> np.ndarray | None:
+def _coords(element: etree._Element, ns: dict[str, str]) -> NDArray[np.float64] | None:
     coords_el = element.find(path="pc:Coords", namespaces=ns)
     if coords_el is None or not coords_el.get("points"):
         return None
@@ -108,10 +108,13 @@ def parse_page_xml(
     levels: list[int] = []
     bboxes: list[tuple[float, float, float, float]] = []
     texts: list[str] = []
-    polygons: list[np.ndarray | None] = []
+    polygons: list[NDArray[np.float64] | None] = []
 
     def _add(
-        level: OCRLevel, parent_id: int, polygon_px: np.ndarray | None, text: str
+        level: OCRLevel,
+        parent_id: int,
+        polygon_px: NDArray[np.float64] | None,
+        text: str,
     ) -> int:
         element_id = len(ids)
         norm_bbox: tuple[float, float, float, float]

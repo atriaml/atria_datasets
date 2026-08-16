@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, ClassVar, Generic, TypeVar
+from typing import Any, ClassVar, TypeVar
 
-from atria_core.datasets import Dataset, DatasetConfig
-from atria_core.datasets._download._download_manager import UrlSpec
+from atria_core.datasets import Dataset, DatasetConfig, UrlSpec
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
@@ -19,8 +18,8 @@ from atria_datasets.htr._common import PageXMLIterator, PageXMLTransform
 T_PageXMLConfig = TypeVar("T_PageXMLConfig", bound=DatasetConfig, default=DatasetConfig)
 
 
-class PageXMLDataset(
-    Dataset[SinglePageDocumentInstance, T_PageXMLConfig], Generic[T_PageXMLConfig]
+class PageXMLDataset[T_PageXMLConfig: DatasetConfig = DatasetConfig](
+    Dataset[SinglePageDocumentInstance, T_PageXMLConfig]
 ):
     """Dataset of scanned pages paired with PAGE-XML ground truth, downloaded
     as archives and read straight off the extracted directory tree.

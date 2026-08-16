@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from atria_core.datasets import DatasetConfig
-from atria_core.datasets._download._download_manager import UrlSpec
+from atria_core.datasets import DatasetConfig, UrlSpec
 
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
 

@@ -5,18 +5,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, overload
 
-from atria_core.datasets import Dataset
-from atria_core.datasets._download._download_manager import UrlSpec
+from atria_core.datasets import Dataset, UrlSpec
 from atria_core.types import (
     ClassificationAnnotation,
     DatasetLabels,
     DatasetMetadata,
     DatasetSplitType,
+    Image,
+    OCRLevel,
     SinglePageDocumentInstance,
+    TranscriptionAnnotation,
 )
-from atria_core.types._generic._annotations import TranscriptionAnnotation
-from atria_core.types._generic._elements import OCRLevel
-from atria_core.types._generic._image import Image
 
 _HOMEPAGE = "https://zenodo.org/records/1492267"
 _ARCHIVE_NAME = "cvl-database-1-1"
@@ -33,14 +32,12 @@ def _dataset_root(data_dir: str | Path) -> Path:
 
 
 def _writer_ids(root: Path) -> list[str]:
-    return sorted(
-        {
-            writer_dir.name
-            for split_name in ("trainset", "testset")
-            for writer_dir in (root / split_name / "words").iterdir()
-            if writer_dir.is_dir() and writer_dir.name.isdigit()
-        }
-    )
+    return sorted({
+        writer_dir.name
+        for split_name in ("trainset", "testset")
+        for writer_dir in (root / split_name / "words").iterdir()
+        if writer_dir.is_dir() and writer_dir.name.isdigit()
+    })
 
 
 @dataclass(frozen=True)

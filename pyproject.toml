@@ -7,7 +7,7 @@ name = "atria_datasets"
 version = "0.0.0"                                                                                                    
 description = "Atria Datasets: A collection of datasets for training and evaluating AI agents in the Atria framework."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">3.13"
 license = { file = "LICENSE.txt" }
 authors = [{ name = "Saifullah", email = "saifullah.saifullah@dfki.de" }]
 dependencies = [
@@ -38,7 +38,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "ray>=2.47.1",
     "requests>=2.32.4",
-    "ruff>=0.12.12",
+    "ruff==0.14.6",
     "sacremoses>=0.1.1",
     "scikit-learn>=1.7.0",
     "textdistance>=4.2.0",
@@ -48,107 +48,62 @@ dependencies = [
     "wids>=0.1.11",
 ]
 
+[project.optional-dependencies]
+test = ["coverage", "pytest"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[project.optional-dependencies]
-test = ["coverage", "pytest"]
-
-[tool.coverage.report]
-skip_covered = true
-show_missing = true
-precision = 2
-exclude_lines = [
-    'def __repr__',
-    'pragma= no cover',
-    'raise NotImplementedError',
-    'if TYPE_CHECKING=',
-    'if typing.TYPE_CHECKING=',
-    '@overload',
-    '@typing.overload',
-    '\(Protocol\)=$',
-    'typing.assert_never',
-    'assert_never',
-    'if __name__ == "__main__":',
-]
-
-## Linter and formatter
 [tool.ruff]
-# cover and extend the default config in https=//docs.astral.sh/ruff/configuration/
-extend-exclude = ["alembic"]
 target-version = "py313"
+extend-exclude = ["alembic"]
+preview = true
 
 [tool.ruff.lint]
-select = [
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings
-    "F",      # pyflakes
-    "I",      # isort
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "UP",     # pyupgrade
-]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
 ignore = [
-    "E501",   # line too long, handled by black
-    "B008",   # do not perform function calls in argument defaults
-    "W191",   # indentation contains tabs
-    "B904",   # Allow raising exceptions without from e, for HTTPException
-    "COM819", # Trailing comma prohibited
-    "D100",   # Missing docstring in public module(file)
-    "D104",   # Missing docstring in public package
-    "D203",   # 1 blank line required before class docstring
-    "E201",   # Whitespace after '('
-    "E202",   # Whitespace before ')'
-    "E203",   # Whitespace before '='
-    "E221",   # Multiple spaces before operator
-    "E241",   # Multiple spaces after ','
-    "E251",   # Unexpected spaces around keyword / parameter equals
-    "W291",   # Trailing whitespace
-    "W293",   # Blank line contains whitespace
+    "E501",  # line too long, handled by formatter
+    "D100", "D104",  # docstring warnings
 ]
-
-isort = { combine-as-imports = true,  split-on-trailing-comma = false }
-
-# Avoid trying to fix flake8-bugbear (`B`) violations.
-unfixable = ["B"]
 
 [tool.ruff.format]
 docstring-code-format = true
-skip-magic-trailing-comma = true
-
-[project.urls]
-"Homepage" = "https://github.com/saifullah3396/atria/"
-"Bug Reports" = "https://github.com/saifullah3396/atria/"
-"Source" = "https://github.com/saifullah3396/atria/"
 
 [tool.pytest.ini_options]
-pythonpath = [".", "src", "tests"]
-# Set additional command line options for pytest
-# Ref: https://docs.pytest.org/en/stable/reference/reference.html#command-line-flags
-addopts = "-rXs --strict-config --strict-markers --tb=short"
-xfail_strict = true         # Treat tests that are marked as xfail but pass as test failures
-# filterwarnings = ["error"]  # Treat all warnings as errors
+pythonpath = ["./src", "."]
+addopts = "-rXs --strict-config --strict-markers --tb=short --import-mode=importlib"
 
-[tool.uv]
-managed = true
+[project.urls]
+Homepage = "https://github.com/atriaml/atria_datasets/"
+Source = "https://github.com/atriaml/atria_datasets/"
+BugReports = "https://github.com/atriaml/atria_datasets/"
 
+[tool.mypy]
+ignore_missing_imports = true
+strict = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+# pymupdf ships no type information, so every call into it reads as untyped.
+# Scoped to that package only -- calls into everything else stay checked.
+untyped_calls_exclude = ["pymupdf"]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.12.0",
+    "pytest>=9.0.1",
+    "ruff>=0.14.6",
+    "mypy>=1.18.2",
+    "types-PyYAML>=6.0.0",
+]
 
 [tool.uv.sources]
 datadings = { git = "https://github.com/saifullah3396/datadings.git" }
 atria-core = { path = "../atria_core", editable = true }
-[dependency-groups]
-dev = [
-    "coverage>=7.9.2",
-    "factory-boy>=3.3.3",
-    "mypy>=1.16.1",
-    "pytest>=8.4.1",
-    "ruff>=0.12.2",
-    "ipykernel>=6.28.1",
-]
 
-[tool.mypy]
-disable_error_code = ["import-untyped", "import-not-found"]
+[tool.uv]
+managed = true
 
 [project.scripts]
 atria_datasets = "atria_datasets.cli:main"

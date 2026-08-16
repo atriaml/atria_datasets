@@ -15,11 +15,12 @@ from atria_core.types import (
     DatasetLabels,
     DatasetMetadata,
     DatasetSplitType,
+    Image,
+    OCRAnnotation,
+    OCRLevel,
     SinglePageDocumentInstance,
 )
-from atria_core.types._generic._annotations import OCRAnnotation
-from atria_core.types._generic._elements import OCRLevel
-from atria_core.types._generic._image import Image
+from numpy.typing import NDArray
 
 from atria_datasets.htr._common import get_image_size
 from atria_datasets.parsers import (
@@ -70,10 +71,12 @@ class IAMConfig(DatasetConfig):
     crop_to_handwriting: bool = True
 
 
-def _bbox(record: IAMRecord, crop_box: tuple[int, int, int, int]) -> np.ndarray:
+def _bbox(
+    record: IAMRecord, crop_box: tuple[int, int, int, int]
+) -> NDArray[np.float64]:
     left, top, right, bottom = crop_box
     width, height = right - left, bottom - top
-    return np.clip(
+    bbox: NDArray[np.float64] = np.clip(
         np.asarray(
             [
                 record.x - left,
@@ -87,6 +90,7 @@ def _bbox(record: IAMRecord, crop_box: tuple[int, int, int, int]) -> np.ndarray:
         0.0,
         1.0,
     )
+    return bbox
 
 
 def _build_annotation(

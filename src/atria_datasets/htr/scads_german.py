@@ -7,16 +7,15 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any, overload
 
-from atria_core.datasets import Dataset, DatasetConfig
-from atria_core.datasets._download._download_manager import UrlSpec
+from atria_core.datasets import Dataset, DatasetConfig, UrlSpec
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
+    Image,
+    OCRLevel,
     SinglePageDocumentInstance,
+    TranscriptionAnnotation,
 )
-from atria_core.types._generic._annotations import TranscriptionAnnotation
-from atria_core.types._generic._elements import OCRLevel
-from atria_core.types._generic._image import Image
 
 _DATA_URLS = [
     UrlSpec(

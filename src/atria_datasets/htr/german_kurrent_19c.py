@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import Literal
 
-from atria_core.datasets import DatasetConfig
-from atria_core.datasets._download._download_manager import UrlSpec
-from atria_core.types import DatasetSplitType
+from atria_core.datasets import DatasetConfig, UrlSpec
+from atria_core.types import DatasetMetadata, DatasetSplitType
 
 from atria_datasets.htr._common import PageXMLIterator
 from atria_datasets.htr._page_xml_dataset import PageXMLDataset
@@ -51,7 +50,7 @@ class GermanKurrent19C(PageXMLDataset[GermanKurrent19CConfig]):
             ]
         return iterator
 
-    def _metadata(self):
+    def _metadata(self) -> DatasetMetadata:
         metadata = super()._metadata()
         if self.config.license_subset == "cc_by_only":
             return type(metadata)(

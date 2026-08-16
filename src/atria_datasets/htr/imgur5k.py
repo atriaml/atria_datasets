@@ -11,19 +11,15 @@ from typing import Any, cast
 import numpy as np
 import requests
 import tqdm
-from atria_core.datasets import Dataset
-from atria_core.datasets._download._download_manager import (
-    AtriaDownloadManager,
-    UrlSpec,
-)
+from atria_core.datasets import AtriaDownloadManager, Dataset, UrlSpec
 from atria_core.logger import get_logger
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
+    Image,
+    OCRAnnotation,
     SinglePageDocumentInstance,
 )
-from atria_core.types._generic._annotations import OCRAnnotation
-from atria_core.types._generic._image import Image
 
 from atria_datasets.htr._common import get_image_size
 
@@ -230,14 +226,12 @@ class IMGUR5K(Dataset[SinglePageDocumentInstance]):
                     continue
                 xc, yc, box_width, box_height, angle = bounding_box
                 texts.append(item["word"])
-                bboxes.append(
-                    [
-                        (xc - box_width / 2) / width,
-                        (yc - box_height / 2) / height,
-                        (xc + box_width / 2) / width,
-                        (yc + box_height / 2) / height,
-                    ]
-                )
+                bboxes.append([
+                    (xc - box_width / 2) / width,
+                    (yc - box_height / 2) / height,
+                    (xc + box_width / 2) / width,
+                    (yc + box_height / 2) / height,
+                ])
                 angles.append(angle)
             if texts:
                 annotation = cast(

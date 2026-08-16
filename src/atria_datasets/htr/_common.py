@@ -7,9 +7,7 @@ from pathlib import Path
 from typing import Any, overload
 
 import imagesize
-from atria_core.types import SinglePageDocumentInstance
-from atria_core.types._generic._elements import OCRLevel
-from atria_core.types._generic._image import Image
+from atria_core.types import Image, OCRLevel, SinglePageDocumentInstance
 from lxml import etree
 
 from atria_datasets.parsers import parse_page_xml
@@ -84,9 +82,10 @@ class PageXMLIterator(Sequence[tuple[Path, Path]]):
                 continue
             keys = []
             if image_name:
-                keys.extend(
-                    [Path(image_name).name.lower(), Path(image_name).stem.lower()]
-                )
+                keys.extend([
+                    Path(image_name).name.lower(),
+                    Path(image_name).stem.lower(),
+                ])
             keys.append(xml_path.stem.lower())
             candidates = next((images[key] for key in keys if key in images), [])
             if candidates:
@@ -166,7 +165,7 @@ class TextAnnotationTransform:
         self.level = level
 
     def __call__(self, sample: tuple[Path, str]) -> SinglePageDocumentInstance:
-        from atria_core.types._generic._annotations import TranscriptionAnnotation
+        from atria_core.types import TranscriptionAnnotation
 
         image_path, text = sample
         return SinglePageDocumentInstance(

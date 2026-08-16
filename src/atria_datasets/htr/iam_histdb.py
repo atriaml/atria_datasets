@@ -8,9 +8,9 @@ from atria_core.datasets import Dataset, DatasetConfig
 from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
+    OCRLevel,
     SinglePageDocumentInstance,
 )
-from atria_core.types._generic._elements import OCRLevel
 
 from atria_datasets.htr._common import TextAnnotationTransform, TextFileIterator
 from atria_datasets.utils import require_manual_path

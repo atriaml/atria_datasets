@@ -4,7 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from atria_core.datasets._hf_dataset import HuggingfaceDataset
+from atria_core.datasets import HuggingfaceDataset
 from atria_core.types import (
     QAPair,
     QuestionAnsweringAnnotation,
