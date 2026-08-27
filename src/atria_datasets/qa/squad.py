@@ -28,9 +28,7 @@ class Squad(HuggingfaceDataset[TextInstance]):
     """SQuAD: questions posed against Wikipedia passages, with answer spans."""
 
     __module_name__ = "squad"
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(repo="squad", **kwargs)
+    __hf_repo__ = "squad"
 
     def _build_input_transform(self) -> Callable[[Any], TextInstance]:
         return InputTransform()

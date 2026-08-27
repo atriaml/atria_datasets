@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from atria_core.datasets import HuggingfaceDataset, HuggingfaceDatasetConfig
+from atria_core.datasets import HuggingfaceDataset
 from atria_core.types import (
     DatasetSplitType,
     Image,
@@ -27,17 +27,11 @@ class InputTransform:
         )
 
 
-class FHSWFGermanHandwriting(
-    HuggingfaceDataset[SinglePageDocumentInstance, HuggingfaceDatasetConfig]
-):
+class FHSWFGermanHandwriting(HuggingfaceDataset[SinglePageDocumentInstance]):
     """FHSWF German handwritten line images and transcriptions."""
 
     __module_name__ = "fhswf_german_handwriting"
-
-    def __init__(
-        self, *, config: HuggingfaceDatasetConfig | None = None, **kwargs: Any
-    ) -> None:
-        super().__init__(repo="fhswf/german_handwriting", config=config, **kwargs)
+    __hf_repo__ = "fhswf/german_handwriting"
 
     def _build_input_transform(self) -> Callable[[Any], SinglePageDocumentInstance]:
         return InputTransform()
