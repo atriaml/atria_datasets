@@ -20,7 +20,7 @@ DATASET_CASES: list[DatasetCase] = [
     ("bentham", {}, {}),
     ("bullinger", {}, {}),
     ("cvl", {}, {}),
-    ("fhswf_german_handwriting", {"config_name": "custom"}, {"config_name": "custom"}),
+    ("fhswf_german_handwriting", {}, {}),
     ("german_kurrent_19c", {"license_subset": "all"}, {"license_subset": "all"}),
     ("gnhk", {}, {}),
     (
@@ -37,6 +37,7 @@ DATASET_CASES: list[DatasetCase] = [
     ("read_bozen", {}, {}),
     ("scadsai_german_handwriting", {"level": OCRLevel.word}, {"level": OCRLevel.word}),
     ("scadsai_german_fullpage", {}, {}),
+    ("slidevqa", {}, {}),
     ("stabs_ratsbuecher_o10", {}, {}),
     ("squad", {}, {}),
     ("textvqa", {}, {}),

@@ -4,49 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atria_datasets"
-version = "0.0.0"                                                                                                    
+version = "0.0.0"
 description = "Atria Datasets: A collection of datasets for training and evaluating AI agents in the Atria framework."
 readme = "README.md"
 requires-python = ">3.13"
 license = { file = "LICENSE.txt" }
 authors = [{ name = "Saifullah", email = "saifullah.saifullah@dfki.de" }]
-dependencies = [
-    "atria-core",
-    "boto3>=1.39.4",
-    "click>=8.1.7",
-    "datadings",
-    "datasets==3.4",
-    "deltalake>=1.0.2",
-    "docile-benchmark>=0.3.4",
-    "editdistance>=0.8.1",
-    "einops>=0.8.1",
-    "filelock>=3.18.0",
-    "fire>=0.7.0",
-    "gdown>=5.2.0",
-    "hydra-core==1.3.2",
-    "hydra_zen==0.14.0",
-    "imagesize>=1.4.1",
-    "lakefs>=0.11.1",
-    "lazy-loader>=0.4",
-    "more-itertools>=11.1.0",
-    "msgpack>=1.1.1",
-    "pandarallel>=1.6.5",
-    "pandas>=2.3.1",
-    "pdfplumber>=0.11.8",
-    "pyarrow-hotfix>=0.7",
-    "pycocotools>=2.0.10",
-    "pyyaml>=6.0.2",
-    "ray>=2.47.1",
-    "requests>=2.32.4",
-    "ruff==0.14.6",
-    "sacremoses>=0.1.1",
-    "scikit-learn>=1.7.0",
-    "textdistance>=4.2.0",
-    "tqdm>=4.67.1",
-    "transformers>=4.53.3",
-    "webdataset>=1.0.2",
-    "wids>=0.1.11",
-]
+dependencies = ["atria-core"]
 
 [project.optional-dependencies]
 test = ["coverage", "pytest"]
@@ -62,8 +26,9 @@ preview = true
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP"]
 ignore = [
-    "E501",  # line too long, handled by formatter
-    "D100", "D104",  # docstring warnings
+    "E501", # line too long, handled by formatter
+    "D100",
+    "D104", # docstring warnings
 ]
 
 [tool.ruff.format]
@@ -100,7 +65,7 @@ dev = [
 
 [tool.uv.sources]
 datadings = { git = "https://github.com/saifullah3396/datadings.git" }
-atria-core = { git = "https://github.com/atriaml/atria_core.git" }
+atria-core = { path = "../atria_core", editable = true }
 
 [tool.uv]
 managed = true

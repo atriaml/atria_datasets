@@ -17,7 +17,7 @@ def test_registration_is_lazy() -> None:
 import sys
 import atria_datasets
 
-assert len(atria_datasets.datasets.list()) == 21
+assert len(atria_datasets.datasets.list()) == 22
 assert not any(
     name.startswith((
         "atria_datasets.cr.",
@@ -35,7 +35,7 @@ assert "atria_datasets.htr.iam" not in sys.modules
 
 
 def test_every_registered_name_resolves_to_a_dataset_subclass() -> None:
-    assert len(atria_datasets.datasets.list()) == 21
+    assert len(atria_datasets.datasets.list()) == 22
     for _, dataset_cls in atria_datasets.datasets.items():
         assert issubclass(dataset_cls, Dataset)
 
