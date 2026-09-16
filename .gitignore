@@ -88,3 +88,5 @@ pyrightconfig.json
 # Local scripts / config files
 *.env
 test/
+usage/examples/verify_mapping.ipynb
+usage/examples/verify_mapping.py

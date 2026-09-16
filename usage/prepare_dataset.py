@@ -15,11 +15,35 @@ import atria_datasets
 logger = get_logger(__name__)
 
 
+
+def benchmark_dataset(dataset: Any, n: int = 10000) -> None:
+    """Iterate over all splits, time each sample load, and log min/max/avg."""
+    import time
+
+    for split, split_iterator in dataset.split_iterators.items():
+        samples: Any = split_iterator
+        count = min(len(samples), n)
+        if count == 0:
+            continue
+        times: list[float] = []
+        for i in range(count):
+            t0 = time.perf_counter()
+            samples[i].load()
+            times.append(time.perf_counter() - t0)
+        logger.info(
+            f"[{split.value}] n={count}"
+            f"  min={min(times):.3f}s"
+            f"  max={max(times):.3f}s"
+            f"  avg={sum(times) / len(times):.3f}s"
+        )
+
+
 def prepare_dataset(
     name: str,
     output_dir: str = "./test",
     enable_caching: bool = False,
     visualize_samples: bool = True,
+    benchmark: bool = False,
     **dataset_kwargs: Any,
 ) -> None:
     """Load and cache a dataset, then inspect the first sample of each split."""
@@ -32,15 +56,16 @@ def prepare_dataset(
 
     for split, split_iterator in dataset.split_iterators.items():
         samples: Any = split_iterator
-        sample_count = len(samples)
-        if not visualize_samples or sample_count == 0:
+        if not visualize_samples or len(samples) == 0:
             continue
-
         sample = samples[0].load()
         sample_dir = Path(output_dir) / name / split.value
         sample_dir.mkdir(parents=True, exist_ok=True)
         visualize(sample, output_dir=str(sample_dir))
         logger.info(f"First sample of split `{split}`:\n {sample}")
+
+    if benchmark:
+        benchmark_dataset(dataset)
 
 
 def main() -> None:
