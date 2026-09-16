@@ -87,9 +87,11 @@ class _HFRowMeta:
 
 @dataclass
 class _Sample:
-    meta: _HFRowMeta
-    page_images: list[PILImage]
+    deck_name: str
+    pdf_path: Path
+    num_pages: int
     page_bboxes: dict[int, list[_BBox]]
+    qa_metas: list[_HFRowMeta]
 
 
 class SplitIterator(Sequence[_Sample]):
@@ -123,6 +125,47 @@ class SplitIterator(Sequence[_Sample]):
 
         logger.info(f"Indexing SlideVQA bounding boxes by deck for {split.value} split")
         self._bbox_offsets_by_deck = self._index_bboxes_by_deck(self._bbox_path)
+
+        logger.info(f"Grouping SlideVQA {split.value} split rows by deck")
+        self._row_indices_by_deck = self._index_rows_by_deck()
+        self._deck_names = list(self._row_indices_by_deck)
+
+        self._pdf_dir = Path(data_dir) / "pdfs"
+        self._pdf_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(
+            f"Writing SlideVQA {split.value} split deck PDFs to {self._pdf_dir}"
+        )
+        self._num_pages_by_deck = self._write_deck_pdfs()
+
+    def _index_rows_by_deck(self) -> dict[str, list[int]]:
+        meta_rows = self._rows.remove_columns(_IMAGE_COLUMNS)
+        row_indices_by_deck: dict[str, list[int]] = {}
+        for row_index, raw_meta_row in enumerate(meta_rows):
+            deck_name = str(raw_meta_row["deck_name"])
+            row_indices_by_deck.setdefault(deck_name, []).append(row_index)
+        return row_indices_by_deck
+
+    def _pdf_path(self, deck_name: str) -> Path:
+        return self._pdf_dir / f"{deck_name}.pdf"
+
+    def _write_deck_pdfs(self) -> dict[str, int]:
+        import tqdm
+
+        num_pages_by_deck: dict[str, int] = {}
+        for deck_name, row_indices in tqdm.tqdm(
+            self._row_indices_by_deck.items(),
+            total=len(self._row_indices_by_deck),
+            desc="Writing SlideVQA deck PDFs",
+            unit="deck",
+        ):
+            pdf_path = self._pdf_path(deck_name)
+            page_images = self._deck_page_images(self._rows[row_indices[0]])
+            num_pages_by_deck[deck_name] = len(page_images)
+            if pdf_path.exists():
+                continue
+            pages_rgb = [image.convert("RGB") for image in page_images]
+            pages_rgb[0].save(pdf_path, save_all=True, append_images=pages_rgb[1:])
+        return num_pages_by_deck
 
     @staticmethod
     def _index_bboxes_by_deck(path: Path) -> dict[str, int]:
@@ -193,16 +236,21 @@ class SplitIterator(Sequence[_Sample]):
     def __getitem__(self, index: int | slice) -> _Sample | Sequence[_Sample]:
         if isinstance(index, slice):
             return [self[item] for item in range(*index.indices(len(self)))]
-        row = self._rows[index]
-        meta = _HFRowMeta.from_hf_row(row)
+        deck_name = self._deck_names[index]
+        row_indices = self._row_indices_by_deck[deck_name]
+        qa_metas = [
+            _HFRowMeta.from_hf_row(self._rows[row_index]) for row_index in row_indices
+        ]
         return _Sample(
-            meta=meta,
-            page_images=self._deck_page_images(row),
-            page_bboxes=self._load_deck_bboxes(meta.deck_name),
+            deck_name=deck_name,
+            pdf_path=self._pdf_path(deck_name),
+            num_pages=self._num_pages_by_deck[deck_name],
+            page_bboxes=self._load_deck_bboxes(deck_name),
+            qa_metas=qa_metas,
         )
 
     def __len__(self) -> int:
-        return len(self._rows)
+        return len(self._deck_names)
 
 
 class InputTransform:
@@ -222,12 +270,12 @@ class InputTransform:
         )
 
     def __call__(self, sample: _Sample) -> MultiPageDocumentInstance:
-        meta = sample.meta
+        document = MultiPageDocumentInstance.from_pdf(
+            sample.pdf_path, sample_id=sample.deck_name
+        )
         pages: list[SinglePageDocumentInstance] = []
-        for page_number, image in enumerate(sample.page_images):
-            page = SinglePageDocumentInstance.from_image(
-                image, sample_id=f"{meta.deck_name}#{page_number}"
-            )
+        for page_number in range(sample.num_pages):
+            page = document.get_page(page_number)
             bboxes = sample.page_bboxes.get(page_number, [])
             pages.append(
                 page.add_annotation(annotation=self._bbox_annotation(bboxes))
@@ -235,19 +283,20 @@ class InputTransform:
                 else page
             )
 
-        qa_pair = MultiPageQAPair(
-            id=meta.qa_id,
-            question_text=meta.question,
-            answer_text=meta.answer,
-            evidence_pages=meta.evidence_pages,
-            arithmetic_expression=meta.arithmetic_expression,
-        )
-        return MultiPageDocumentInstance(
-            sample_id=f"{meta.deck_name}#{meta.qa_id}",
-            pages=pages,
-            metadata={"deck_name": meta.deck_name},
+        qa_pairs = [
+            MultiPageQAPair(
+                id=meta.qa_id,
+                question_text=meta.question,
+                answer_text=meta.answer,
+                evidence_pages=meta.evidence_pages,
+                arithmetic_expression=meta.arithmetic_expression,
+            )
+            for meta in sample.qa_metas
+        ]
+        return replace(
+            document, pages=pages, metadata={"deck_name": sample.deck_name}
         ).add_annotation(
-            annotation=MultiPageQuestionAnsweringAnnotation(qa_pairs=[qa_pair])
+            annotation=MultiPageQuestionAnsweringAnnotation(qa_pairs=qa_pairs)
         )
 
 
