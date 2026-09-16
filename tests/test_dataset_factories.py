@@ -33,6 +33,8 @@ DATASET_CASES: list[DatasetCase] = [
     ("icdar2017_read_htr_b", {}, {}),
     ("imgur5k", {}, {}),
     ("koenigsfelden", {"collection": "u17"}, {"collection": "u17"}),
+    ("mmlongbench_doc", {}, {}),
+    ("mp_docvqa", {}, {}),
     ("read_konzilsprotokolle", {}, {}),
     ("read_bozen", {}, {}),
     ("scadsai_german_handwriting", {"level": OCRLevel.word}, {"level": OCRLevel.word}),

@@ -10,7 +10,10 @@ readme = "README.md"
 requires-python = ">=3.13,<3.14"
 license = { file = "LICENSE.txt" }
 authors = [{ name = "Saifullah", email = "saifullah.saifullah@dfki.de" }]
-dependencies = ["atria-core"]
+dependencies = [
+    "atria-core",
+    "img2pdf>=0.6.3",
+]
 
 [project.optional-dependencies]
 test = ["coverage", "pytest"]
@@ -61,11 +64,12 @@ dev = [
     "ruff>=0.14.6",
     "mypy>=1.18.2",
     "types-PyYAML>=6.0.0",
+    "ipykernel>=7.3.0",
 ]
 
 [tool.uv.sources]
 datadings = { git = "https://github.com/saifullah3396/datadings.git" }
-atria-core = { git = "https://github.com/atriaml/atria_core" }
+atria-core = { path = "../atria_core", editable = true }
 # atria-core = { path = "../atria_core", editable = true }
 
 [tool.uv]

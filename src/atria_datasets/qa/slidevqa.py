@@ -68,7 +68,7 @@ class _HFRowMeta:
 
         raw_evidence_pages = row["evidence_pages"]
         assert isinstance(raw_evidence_pages, list)
-        evidence_pages = [int(page) for page in raw_evidence_pages]
+        evidence_pages = [int(page) - 1 for page in raw_evidence_pages]
 
         qa_id = row["qa_id"]
         assert isinstance(qa_id, int)
@@ -148,11 +148,13 @@ class SplitIterator(Sequence[_Sample]):
         return self._pdf_dir / f"{deck_name}.pdf"
 
     def _write_deck_pdfs(self) -> None:
+        import io
+
+        import img2pdf
         import tqdm
 
         for deck_name, row_indices in tqdm.tqdm(
             self._row_indices_by_deck.items(),
-            total=len(self._row_indices_by_deck),
             desc="Writing SlideVQA deck PDFs",
             unit="deck",
         ):
@@ -160,8 +162,14 @@ class SplitIterator(Sequence[_Sample]):
             if pdf_path.exists():
                 continue
             page_images = self._deck_page_images(self._rows[row_indices[0]])
-            pages_rgb = [image.convert("RGB") for image in page_images]
-            pages_rgb[0].save(pdf_path, save_all=True, append_images=pages_rgb[1:])
+            png_bytes: list[bytes] = []
+            for image in page_images:
+                buf = io.BytesIO()
+                image.convert("RGB").save(buf, format="PNG")
+                png_bytes.append(buf.getvalue())
+            pdf_data = img2pdf.convert(png_bytes)
+            assert pdf_data is not None
+            pdf_path.write_bytes(pdf_data)
 
     @staticmethod
     def _index_bboxes_by_deck(path: Path) -> dict[str, int]:
