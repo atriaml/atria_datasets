@@ -89,7 +89,6 @@ class _HFRowMeta:
 class _Sample:
     deck_name: str
     pdf_path: Path
-    num_pages: int
     page_bboxes: dict[int, list[_BBox]]
     qa_metas: list[_HFRowMeta]
 
@@ -135,7 +134,7 @@ class SplitIterator(Sequence[_Sample]):
         logger.info(
             f"Writing SlideVQA {split.value} split deck PDFs to {self._pdf_dir}"
         )
-        self._num_pages_by_deck = self._write_deck_pdfs()
+        self._write_deck_pdfs()
 
     def _index_rows_by_deck(self) -> dict[str, list[int]]:
         meta_rows = self._rows.remove_columns(_IMAGE_COLUMNS)
@@ -148,10 +147,9 @@ class SplitIterator(Sequence[_Sample]):
     def _pdf_path(self, deck_name: str) -> Path:
         return self._pdf_dir / f"{deck_name}.pdf"
 
-    def _write_deck_pdfs(self) -> dict[str, int]:
+    def _write_deck_pdfs(self) -> None:
         import tqdm
 
-        num_pages_by_deck: dict[str, int] = {}
         for deck_name, row_indices in tqdm.tqdm(
             self._row_indices_by_deck.items(),
             total=len(self._row_indices_by_deck),
@@ -159,13 +157,11 @@ class SplitIterator(Sequence[_Sample]):
             unit="deck",
         ):
             pdf_path = self._pdf_path(deck_name)
-            page_images = self._deck_page_images(self._rows[row_indices[0]])
-            num_pages_by_deck[deck_name] = len(page_images)
             if pdf_path.exists():
                 continue
+            page_images = self._deck_page_images(self._rows[row_indices[0]])
             pages_rgb = [image.convert("RGB") for image in page_images]
             pages_rgb[0].save(pdf_path, save_all=True, append_images=pages_rgb[1:])
-        return num_pages_by_deck
 
     @staticmethod
     def _index_bboxes_by_deck(path: Path) -> dict[str, int]:
@@ -244,7 +240,6 @@ class SplitIterator(Sequence[_Sample]):
         return _Sample(
             deck_name=deck_name,
             pdf_path=self._pdf_path(deck_name),
-            num_pages=self._num_pages_by_deck[deck_name],
             page_bboxes=self._load_deck_bboxes(deck_name),
             qa_metas=qa_metas,
         )
@@ -274,7 +269,7 @@ class InputTransform:
             sample.pdf_path, sample_id=sample.deck_name
         )
         pages: list[SinglePageDocumentInstance] = []
-        for page_number in range(sample.num_pages):
+        for page_number in range(document.num_pages):
             page = document.get_page(page_number)
             bboxes = sample.page_bboxes.get(page_number, [])
             pages.append(
