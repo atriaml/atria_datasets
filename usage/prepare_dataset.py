@@ -18,20 +18,19 @@ logger = get_logger(__name__)
 def prepare_dataset(
     name: str,
     output_dir: str = "./test",
+    enable_caching: bool = False,
     visualize_samples: bool = True,
     **dataset_kwargs: Any,
 ) -> None:
     """Load and cache a dataset, then inspect the first sample of each split."""
-    logger.info("Loading dataset %s...", name)
-    cached = (
-        DatasetBuilder()
-        .load(name, **dataset_kwargs)
-        .cache(FileStorageType.DELTALAKE, store_images_to_files=True)
-        .build()
-    )
-    logger.info("Cached dataset:\n%s", cached)
+    dataset = DatasetBuilder().load(name, **dataset_kwargs)
+    if enable_caching:
+        dataset = dataset.cache(FileStorageType.DELTALAKE, store_images_to_files=True)
+    dataset = dataset.build()
 
-    for split, split_iterator in cached.split_iterators.items():
+    logger.info("Cached dataset:\n%s", dataset)
+
+    for split, split_iterator in dataset.split_iterators.items():
         samples: Any = split_iterator
         sample_count = len(samples)
         if not visualize_samples or sample_count == 0:
