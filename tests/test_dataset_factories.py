@@ -43,6 +43,7 @@ DATASET_CASES: list[DatasetCase] = [
     ("stabs_ratsbuecher_o10", {}, {}),
     ("squad", {}, {}),
     ("textvqa", {}, {}),
+    ("tobacco3482", {"load_ocr": True}, {"load_ocr": True}),
 ]
 
 

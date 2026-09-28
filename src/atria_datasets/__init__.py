@@ -27,6 +27,7 @@ _DATASET_IMPORT_PATHS: dict[str, str] = {
     "squad": "atria_datasets.qa.squad.Squad",
     "stabs_ratsbuecher_o10": "atria_datasets.htr.stabs_ratsbuecher.StABSRatsbuecher",
     "textvqa": "atria_datasets.qa.textvqa.TextVqa",
+    "tobacco3482": "atria_datasets.cls.tobacco3482.Tobacco3482",
 }
 
 datasets.from_dict(_DATASET_IMPORT_PATHS)
