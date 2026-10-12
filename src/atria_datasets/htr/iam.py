@@ -29,7 +29,7 @@ from atria_datasets.parsers import (
     parse_iam_forms,
     parse_iam_split,
 )
-from atria_datasets.utils import require_manual_path
+from atria_datasets.utils import ManualDownloadError
 
 _HOMEPAGE = "https://fki.tic.heia-fr.ch/databases/iam-handwriting-database"
 _AACHEN_SPLITS = {
@@ -46,14 +46,23 @@ def _iam_root(data_dir: str | Path) -> Path:
             candidate / "forms"
         ).is_dir():
             return candidate
-    return require_manual_path(
-        data_dir=data_dir,
-        expected_path="iam",
-        homepage=_HOMEPAGE,
-        instructions=(
-            "Extract forms/ and ascii/ there, and extract the OpenSLR 56 "
-            "Aachen split archive so iam/splits/*.uttlist exists."
-        ),
+    iam_dir = data_dir.expanduser().resolve()
+    raise ManualDownloadError(
+        f"This dataset must be downloaded manually from {_HOMEPAGE}. "
+        f"Place it at {iam_dir}. Register first, then run:\n\n"
+        f'''IAM_DIR="{iam_dir}"
+IAM_USERNAME="your_registered_username"
+mkdir -p "$IAM_DIR/.downloads" "$IAM_DIR/ascii" "$IAM_DIR/forms" "$IAM_DIR/splits"
+wget --user "$IAM_USERNAME" --ask-password -O "$IAM_DIR/.downloads/ascii.tgz" https://fki.tic.heia-fr.ch/DBs/iamDB/data/ascii.tgz
+wget --user "$IAM_USERNAME" --ask-password -O "$IAM_DIR/.downloads/formsA-D.tgz" https://fki.tic.heia-fr.ch/DBs/iamDB/data/formsA-D.tgz
+wget --user "$IAM_USERNAME" --ask-password -O "$IAM_DIR/.downloads/formsE-H.tgz" https://fki.tic.heia-fr.ch/DBs/iamDB/data/formsE-H.tgz
+wget --user "$IAM_USERNAME" --ask-password -O "$IAM_DIR/.downloads/formsI-Z.tgz" https://fki.tic.heia-fr.ch/DBs/iamDB/data/formsI-Z.tgz
+wget -O "$IAM_DIR/.downloads/splits.zip" https://www.openslr.org/resources/56/splits.zip
+tar -xzf "$IAM_DIR/.downloads/ascii.tgz" -C "$IAM_DIR/ascii"
+tar -xzf "$IAM_DIR/.downloads/formsA-D.tgz" -C "$IAM_DIR/forms"
+tar -xzf "$IAM_DIR/.downloads/formsE-H.tgz" -C "$IAM_DIR/forms"
+tar -xzf "$IAM_DIR/.downloads/formsI-Z.tgz" -C "$IAM_DIR/forms"
+unzip -o "$IAM_DIR/.downloads/splits.zip" -d "$IAM_DIR/splits"'''
     )
 
 
@@ -121,6 +130,7 @@ def _build_annotation(
         parent_ids=np.asarray(parent_ids),
         levels=np.asarray(levels),
         bboxes=np.asarray(bboxes, dtype=np.float64),
+        normalized=True,
         texts=np.asarray(texts, dtype=object),
     )
     annotation.validate_hierarchy()
