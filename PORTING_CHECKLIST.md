@@ -18,7 +18,16 @@ time before starting the next.
   This uses the repository's standard preparation and visualization flow. The
   first run downloads the original archive into Atria's default cache if it is
   not already present.
-- [ ] CORD
+- [x] CORD — downloaded and verified with `usage/prepare_dataset.py cord`
+
+  Run from the `atria_datasets` repository root:
+
+  ```bash
+  uv run python usage/prepare_dataset.py cord
+  ```
+
+  This downloads the original CORD parquet shards into Atria's default cache
+  if they are not already present, then prepares and visualizes each split.
 - [ ] SROIE
 - [ ] WildReceipts
 - [ ] DocILE

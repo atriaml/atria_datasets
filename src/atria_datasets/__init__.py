@@ -6,6 +6,7 @@ _DATASET_IMPORT_PATHS: dict[str, str] = {
     "austrian_newspapers": "atria_datasets.htr.austrian_newspapers.AustrianNewspapers",
     "bentham": "atria_datasets.htr.bentham.Bentham",
     "bullinger": "atria_datasets.htr.bullinger.Bullinger",
+    "cord": "atria_datasets.ser.cord.CORD",
     "cvl": "atria_datasets.htr.cvl.CVL",
     "fhswf_german_handwriting": "atria_datasets.htr.fhswf_german.FHSWFGermanHandwriting",
     "funsd": "atria_datasets.ser.funsd.FUNSD",
