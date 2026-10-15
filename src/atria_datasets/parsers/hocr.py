@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+
 import numpy as np
 from bs4 import BeautifulSoup
 
@@ -9,7 +11,12 @@ from atria_core.types import DocumentContent, OCRAnnotation, OCRLevel
 
 
 def parse_tesseract_hocr(raw_hocr: str) -> DocumentContent:
-    """Apply the same XML parsing and word fields as the original OCRProcessor."""
+    """Apply the original OCR loading and XML parsing behavior."""
+    # The original Atria OCR loader handled OCR archives containing Python's
+    # string representation of bytes (e.g. ``b'<?xml ...'``) before parsing.
+    if raw_hocr.startswith("b'"):
+        raw_hocr = ast.literal_eval(raw_hocr).decode("utf-8")
+
     soup = BeautifulSoup(raw_hocr, features="xml")
 
     pages = soup.findAll("div", {"class": "ocr_page"})
