@@ -8,6 +8,7 @@ _DATASET_IMPORT_PATHS: dict[str, str] = {
     "bullinger": "atria_datasets.htr.bullinger.Bullinger",
     "cvl": "atria_datasets.htr.cvl.CVL",
     "fhswf_german_handwriting": "atria_datasets.htr.fhswf_german.FHSWFGermanHandwriting",
+    "funsd": "atria_datasets.ser.funsd.FUNSD",
     "german_kurrent_19c": "atria_datasets.htr.german_kurrent_19c.GermanKurrent19C",
     "gnhk": "atria_datasets.htr.gnhk.GNHK",
     "iam": "atria_datasets.htr.iam.IAM",

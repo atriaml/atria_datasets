@@ -1,0 +1,191 @@
+"""FUNSD form understanding dataset."""
+
+from __future__ import annotations
+
+import json
+import os
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, overload
+
+from atria_core.datasets import Dataset, DatasetConfig, UrlSpec
+from atria_core.types import (
+    DatasetLabels,
+    DatasetMetadata,
+    DatasetSplitType,
+    DocumentContent,
+    ElementArray,
+    EntityLabelingAnnotation,
+    Image,
+    SinglePageDocumentInstance,
+)
+
+_HOMEPAGE = "https://guillaumejaume.github.io/FUNSD/"
+_URLS = [UrlSpec(url=f"{_HOMEPAGE}dataset.zip", url_ext=".zip")]
+_LABELS = [
+    "O",
+    "B-HEADER",
+    "I-HEADER",
+    "B-QUESTION",
+    "I-QUESTION",
+    "B-ANSWER",
+    "I-ANSWER",
+]
+_SPLIT_DIRS = {
+    DatasetSplitType.train: "training_data",
+    DatasetSplitType.test: "testing_data",
+}
+
+
+class FUNSDConfig(DatasetConfig):
+    """Options for converting the FUNSD form annotations."""
+
+    apply_reading_order_correction: bool = True
+
+
+@dataclass(frozen=True)
+class _FUNSDRecord:
+    image_path: Path
+    annotation_path: Path
+
+
+class _FUNSDSplit(Sequence[_FUNSDRecord]):
+    def __init__(self, data_dir: str | Path, split: DatasetSplitType) -> None:
+        split_dir = Path(data_dir) / "dataset" / "dataset" / _SPLIT_DIRS[split]
+        annotations = split_dir / "annotations"
+        self.samples = [
+            _FUNSDRecord(
+                image_path=split_dir / "images" / filename,
+                annotation_path=annotations / f"{Path(filename).stem}.json",
+            )
+            for filename in sorted(os.listdir(split_dir / "images"))
+        ]
+
+    @overload
+    def __getitem__(self, index: int) -> _FUNSDRecord: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[_FUNSDRecord]: ...
+
+    def __getitem__(self, index: int | slice) -> _FUNSDRecord | Sequence[_FUNSDRecord]:
+        return self.samples[index]
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+
+def _reading_order(
+    words: list[str], boxes: list[list[float]], labels: list[str]
+) -> tuple[list[str], list[list[float]], list[str]]:
+    """Sort words top-to-bottom and left-to-right, grouping nearby baselines."""
+    rows = sorted(
+        range(len(words)),
+        key=lambda i: ((boxes[i][1] + boxes[i][3]) / 2, boxes[i][0]),
+    )
+    lines: list[list[int]] = []
+    for index in rows:
+        center_y = (boxes[index][1] + boxes[index][3]) / 2
+        if not lines:
+            lines.append([index])
+            continue
+        prev = lines[-1][-1]
+        prev_center_y = (boxes[prev][1] + boxes[prev][3]) / 2
+        prev_height = boxes[prev][3] - boxes[prev][1]
+        if abs(center_y - prev_center_y) <= prev_height * 0.4:
+            lines[-1].append(index)
+        else:
+            lines.append([index])
+    order = [i for line in lines for i in sorted(line, key=lambda j: boxes[j][0])]
+    return (
+        [words[i] for i in order],
+        [boxes[i] for i in order],
+        [labels[i] for i in order],
+    )
+
+
+class _FUNSDTransform:
+    def __init__(self, config: FUNSDConfig) -> None:
+        self._config = config
+
+    def __call__(self, sample: _FUNSDRecord) -> SinglePageDocumentInstance:
+        with sample.annotation_path.open(encoding="utf8") as stream:
+            annotation = json.load(stream)
+
+        from PIL import Image as PILImage
+
+        with PILImage.open(sample.image_path) as image:
+            width, height = image.size
+
+        words: list[str] = []
+        boxes: list[list[float]] = []
+        labels: list[str] = []
+        for item in annotation["form"]:
+            item_words = [word for word in item["words"] if word["text"].strip()]
+            if not item_words:
+                continue
+            kind = item["label"].upper()
+            for index, word in enumerate(item_words):
+                words.append(word["text"])
+                x0, y0, x1, y1 = word["box"]
+                boxes.append(
+                    [
+                        x0 / width,
+                        y0 / height,
+                        x1 / width,
+                        y1 / height,
+                    ]
+                )
+                labels.append(
+                    "O" if kind == "OTHER" else f"{'B' if index == 0 else 'I'}-{kind}"
+                )
+
+        if self._config.apply_reading_order_correction:
+            words, boxes, labels = _reading_order(words, boxes, labels)
+
+        content = DocumentContent(
+            elements=ElementArray.from_words(
+                texts=words, bboxes=boxes, normalized=True
+            )
+        )
+        instance = SinglePageDocumentInstance(
+            sample_id=sample.image_path.name,
+            visual=Image(file_path=str(sample.image_path)),
+            content=content,
+        )
+        return instance.add_annotation(
+            EntityLabelingAnnotation(
+                word_label_values=[_LABELS.index(label) for label in labels],
+                word_label_names=labels,
+            )
+        )
+
+
+class FUNSD(Dataset[SinglePageDocumentInstance, FUNSDConfig]):
+    """FUNSD forms with word boxes and BIO semantic entity labels."""
+
+    __module_name__ = "funsd"
+
+    def _download_urls(self) -> list[UrlSpec]:
+        return _URLS
+
+    def _metadata(self) -> DatasetMetadata:
+        return DatasetMetadata(
+            description="Forms annotated for named entity recognition and document understanding.",
+            homepage=_HOMEPAGE,
+            license="Apache-2.0",
+            dataset_labels=DatasetLabels(ser=_LABELS),
+        )
+
+    def _available_splits(self, data_dir: str) -> list[DatasetSplitType]:
+        return list(_SPLIT_DIRS)
+
+    def _build_split_iterator(
+        self, split: DatasetSplitType, data_dir: str
+    ) -> _FUNSDSplit:
+        return _FUNSDSplit(data_dir=data_dir, split=split)
+
+    def _build_input_transform(
+        self,
+    ) -> Callable[[Any], SinglePageDocumentInstance]:
+        return _FUNSDTransform(config=self.config)
