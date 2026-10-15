@@ -33,6 +33,7 @@ _DATASET_IMPORT_PATHS: dict[str, str] = {
     "squad": "atria_datasets.qa.squad.Squad",
     "stabs_ratsbuecher_o10": "atria_datasets.htr.stabs_ratsbuecher.StABSRatsbuecher",
     "textvqa": "atria_datasets.qa.textvqa.TextVqa",
+    "tobacco3482": "atria_datasets.document_classification.tobacco3482.Tobacco3482",
     "wild_receipts": "atria_datasets.ser.wild_receipts.WildReceipts",
 }
 
