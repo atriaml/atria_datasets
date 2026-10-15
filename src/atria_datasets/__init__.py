@@ -28,6 +28,7 @@ _DATASET_IMPORT_PATHS: dict[str, str] = {
     "read_konzilsprotokolle": "atria_datasets.htr.konzilsprotokolle.Konzilsprotokolle",
     "scadsai_german_fullpage": "atria_datasets.htr.scads_german_fullpage.ScaDSAIFullPage",
     "scadsai_german_handwriting": "atria_datasets.htr.scads_german.ScaDSAI",
+    "sroie": "atria_datasets.ser.sroie.SROIE",
     "slidevqa": "atria_datasets.qa.slidevqa.SlideVQA",
     "squad": "atria_datasets.qa.squad.Squad",
     "stabs_ratsbuecher_o10": "atria_datasets.htr.stabs_ratsbuecher.StABSRatsbuecher",

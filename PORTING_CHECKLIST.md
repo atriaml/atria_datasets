@@ -28,7 +28,16 @@ time before starting the next.
 
   This downloads the original CORD parquet shards into Atria's default cache
   if they are not already present, then prepares and visualizes each split.
-- [ ] SROIE
+- [x] SROIE — verified with `usage/prepare_dataset.py sroie`
+
+  Run from the `atria_datasets` repository root:
+
+  ```bash
+  uv run python usage/prepare_dataset.py sroie
+  ```
+
+  The first run downloads the original SROIE archive to Atria's default cache
+  if it is not already present.
 - [ ] WildReceipts
 - [ ] DocILE
 
