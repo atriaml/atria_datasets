@@ -38,7 +38,16 @@ time before starting the next.
 
   The first run downloads the original SROIE archive to Atria's default cache
   if it is not already present.
-- [ ] WildReceipts
+- [x] WildReceipts — verified with `usage/prepare_dataset.py wild_receipts`
+
+  Run from the `atria_datasets` repository root:
+
+  ```bash
+  uv run python usage/prepare_dataset.py wild_receipts
+  ```
+
+  The first run downloads the original WildReceipt archive to Atria's default
+  cache if it is not already present.
 - [ ] DocILE
 
 ## Other dataset groups (later)
