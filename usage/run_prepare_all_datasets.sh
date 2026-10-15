@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -uo pipefail
+set -euo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_DIR=$(cd -- "${SCRIPT_DIR}/.." && pwd)
@@ -10,24 +10,28 @@ mapfile -t DATASET_NAMES < <(
         'import atria_datasets; print(*sorted(atria_datasets.datasets.list()), sep="\n")'
 )
 
-FAILED_DATASETS=()
-
-for DATASET_NAME in "${DATASET_NAMES[@]}"; do
-    echo
-    echo "=== Preparing ${DATASET_NAME} ==="
-
-    if uv run python usage/prepare_dataset.py "${DATASET_NAME}"; then
-        echo "=== Passed: ${DATASET_NAME} ==="
-    else
-        echo "=== Failed: ${DATASET_NAME} ===" >&2
-        FAILED_DATASETS+=("${DATASET_NAME}")
-    fi
-done
-
-echo
-echo "Prepared $((${#DATASET_NAMES[@]} - ${#FAILED_DATASETS[@]}))/${#DATASET_NAMES[@]} datasets successfully."
-
-if [[ ${#FAILED_DATASETS[@]} -gt 0 ]]; then
-    echo "Failed datasets: ${FAILED_DATASETS[*]}" >&2
-    exit 1
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <index|all|list>" >&2
+    exit 2
 fi
+
+if [[ "$1" == "list" ]]; then
+    for index in "${!DATASET_NAMES[@]}"; do
+        printf '%2d: %s\n' "${index}" "${DATASET_NAMES[index]}"
+    done
+    exit 0
+fi
+
+if [[ "$1" == "all" ]]; then
+    for dataset_name in "${DATASET_NAMES[@]}"; do
+        uv run python usage/prepare_dataset.py "${dataset_name}"
+    done
+    exit 0
+fi
+
+if [[ ! "$1" =~ ^[0-9]+$ ]] || (( $1 >= ${#DATASET_NAMES[@]} )); then
+    echo "Dataset index must be between 0 and $((${#DATASET_NAMES[@]} - 1)), or use 'all' or 'list'." >&2
+    exit 2
+fi
+
+uv run python usage/prepare_dataset.py "${DATASET_NAMES[$1]}"

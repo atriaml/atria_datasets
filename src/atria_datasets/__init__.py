@@ -25,6 +25,7 @@ _DATASET_IMPORT_PATHS: dict[str, str] = {
     "nist_sd19": "atria_datasets.cr.nist_sd19.NISTSD19",
     "read_bozen": "atria_datasets.htr.read_bozen.ReadBozen",
     "rimes": "atria_datasets.htr.rimes.RIMES",
+    "rvlcdip": "atria_datasets.document_classification.rvlcdip.RvlCdip",
     "read_konzilsprotokolle": "atria_datasets.htr.konzilsprotokolle.Konzilsprotokolle",
     "scadsai_german_fullpage": "atria_datasets.htr.scads_german_fullpage.ScaDSAIFullPage",
     "scadsai_german_handwriting": "atria_datasets.htr.scads_german.ScaDSAI",

@@ -15,9 +15,10 @@ from atria_core.types import (
     DatasetMetadata,
     DatasetSplitType,
     Image,
-    OCRAnnotation,
     SinglePageDocumentInstance,
 )
+
+from atria_datasets.parsers.hocr import parse_tesseract_hocr
 
 _CITATION = """\
 @article{Kumar2014StructuralSF,
@@ -72,7 +73,7 @@ _SPLIT_FILES = {
 class Tobacco3482Config(DatasetConfig):
     """Options for loading the original image and OCR data."""
 
-    load_ocr: bool = True
+    load_ocr: bool = False
 
 
 @dataclass(frozen=True)
@@ -116,57 +117,26 @@ class _Tobacco3482Split(Sequence[_Tobacco3482Record]):
         return len(self.samples)
 
 
-def _load_hocr(path: Path, image_size: tuple[int, int]) -> OCRAnnotation:
-    """Read the supplied Tesseract hOCR words into Atria's OCR representation."""
-    from lxml import html
-
-    root = html.fromstring(path.read_bytes())
-    width, height = image_size
-    texts: list[str] = []
-    boxes: list[list[float]] = []
-    nodes = root.xpath(
-        "//*[contains(concat(' ', normalize-space(@class), ' '), ' ocrx_word ')]"
-    )
-    for node in nodes:
-        text = node.text_content().strip()
-        title = node.get("title", "")
-        bbox = next(
-            (part for part in title.split(";") if part.strip().startswith("bbox ")),
-            None,
-        )
-        if not text or bbox is None:
-            continue
-        x0, y0, x1, y1 = (float(value) for value in bbox.strip().split()[1:5])
-        texts.append(text)
-        boxes.append([x0 / width, y0 / height, x1 / width, y1 / height])
-    annotation = OCRAnnotation.from_words(
-        texts=texts, bboxes=boxes, normalized=True
-    )
-    assert isinstance(annotation, OCRAnnotation)
-    return annotation
-
-
 class _Tobacco3482Transform:
     def __init__(self, config: Tobacco3482Config) -> None:
         self._config = config
 
     def __call__(self, sample: _Tobacco3482Record) -> SinglePageDocumentInstance:
-        instance = SinglePageDocumentInstance(
+        content = (
+            parse_tesseract_hocr(sample.ocr_path.read_text(encoding="utf-8"))
+            if self._config.load_ocr
+            else None
+        )
+        return SinglePageDocumentInstance(
             sample_id=sample.image_path.name,
             visual=Image(file_path=str(sample.image_path)),
+            content=content,
         ).add_annotation(
             ClassificationAnnotation(
                 label_value=sample.label_value,
                 label_name=_CLASSES[sample.label_value],
             )
         )
-        if self._config.load_ocr:
-            from PIL import Image as PILImage
-
-            with PILImage.open(sample.image_path) as image:
-                ocr = _load_hocr(sample.ocr_path, image.size)
-            instance = instance.add_annotation(ocr)
-        return instance
 
 
 class Tobacco3482(Dataset[SinglePageDocumentInstance, Tobacco3482Config]):

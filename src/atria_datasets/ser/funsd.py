@@ -14,12 +14,13 @@ from atria_core.types import (
     DatasetLabels,
     DatasetMetadata,
     DatasetSplitType,
-    DocumentContent,
-    ElementArray,
     EntityLabelingAnnotation,
     Image,
     SinglePageDocumentInstance,
 )
+
+from atria_datasets.ser._legacy_content import content_from_words_and_segments
+from atria_datasets.ser.utilities import _sorted_indices_in_reading_order
 
 _HOMEPAGE = "https://guillaumejaume.github.io/FUNSD/"
 _URLS = [UrlSpec(url=f"{_HOMEPAGE}dataset.zip", url_ext=".zip")]
@@ -75,35 +76,6 @@ class _FUNSDSplit(Sequence[_FUNSDRecord]):
         return len(self.samples)
 
 
-def _reading_order(
-    words: list[str], boxes: list[list[float]], labels: list[str]
-) -> tuple[list[str], list[list[float]], list[str]]:
-    """Sort words top-to-bottom and left-to-right, grouping nearby baselines."""
-    rows = sorted(
-        range(len(words)),
-        key=lambda i: ((boxes[i][1] + boxes[i][3]) / 2, boxes[i][0]),
-    )
-    lines: list[list[int]] = []
-    for index in rows:
-        center_y = (boxes[index][1] + boxes[index][3]) / 2
-        if not lines:
-            lines.append([index])
-            continue
-        prev = lines[-1][-1]
-        prev_center_y = (boxes[prev][1] + boxes[prev][3]) / 2
-        prev_height = boxes[prev][3] - boxes[prev][1]
-        if abs(center_y - prev_center_y) <= prev_height * 0.4:
-            lines[-1].append(index)
-        else:
-            lines.append([index])
-    order = [i for line in lines for i in sorted(line, key=lambda j: boxes[j][0])]
-    return (
-        [words[i] for i in order],
-        [boxes[i] for i in order],
-        [labels[i] for i in order],
-    )
-
-
 class _FUNSDTransform:
     def __init__(self, config: FUNSDConfig) -> None:
         self._config = config
@@ -120,10 +92,12 @@ class _FUNSDTransform:
         words: list[str] = []
         boxes: list[list[float]] = []
         labels: list[str] = []
+        segment_ids: list[int] = []
         for item in annotation["form"]:
             item_words = [word for word in item["words"] if word["text"].strip()]
             if not item_words:
                 continue
+            segment_id = max(segment_ids, default=-1) + 1
             kind = item["label"].upper()
             for index, word in enumerate(item_words):
                 words.append(word["text"])
@@ -139,15 +113,18 @@ class _FUNSDTransform:
                 labels.append(
                     "O" if kind == "OTHER" else f"{'B' if index == 0 else 'I'}-{kind}"
                 )
+                segment_ids.append(segment_id)
 
         if self._config.apply_reading_order_correction:
-            words, boxes, labels = _reading_order(words, boxes, labels)
-
-        content = DocumentContent(
-            elements=ElementArray.from_words(
-                texts=words, bboxes=boxes, normalized=True
+            order = _sorted_indices_in_reading_order(
+                [tuple(box) for box in boxes]
             )
-        )
+            words = [words[index] for index in order]
+            boxes = [boxes[index] for index in order]
+            labels = [labels[index] for index in order]
+            segment_ids = [segment_ids[index] for index in order]
+
+        content = content_from_words_and_segments(words, boxes, segment_ids)
         instance = SinglePageDocumentInstance(
             sample_id=sample.image_path.name,
             visual=Image(file_path=str(sample.image_path)),

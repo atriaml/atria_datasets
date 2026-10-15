@@ -18,12 +18,12 @@ from atria_core.types import (
     DatasetLabels,
     DatasetMetadata,
     DatasetSplitType,
-    DocumentContent,
-    ElementArray,
     EntityLabelingAnnotation,
     Image,
     SinglePageDocumentInstance,
 )
+
+from atria_datasets.ser._legacy_content import content_from_words_and_segments
 
 _HOMEPAGE = "https://github.com/clovaai/cord"
 _BASE_HF_REPO = "https://huggingface.co/datasets/naver-clova-ix/cord-v2"
@@ -163,10 +163,12 @@ class _CORDTransform:
         words: list[str] = []
         boxes: list[list[float]] = []
         label_names: list[str] = []
+        segment_ids: list[int] = []
         for line in annotation["valid_line"]:
             line_words = [word for word in line["words"] if word["text"].strip()]
             if not line_words:
                 continue
+            segment_id = max(segment_ids, default=-1) + 1
             category = line["category"]
             category = category.upper().replace("MENU.SUB_", "MENU.SUB.")
             for index, word in enumerate(line_words):
@@ -189,16 +191,13 @@ class _CORDTransform:
                     label_names.append(
                         f"{'B' if index == 0 else 'I'}-{category}"
                     )
+                segment_ids.append(segment_id)
 
         image_id = str(annotation["meta"]["image_id"])
         instance = SinglePageDocumentInstance(
             sample_id=image_id,
             visual=Image(content=image),
-            content=DocumentContent(
-                elements=ElementArray.from_words(
-                    texts=words, bboxes=boxes, normalized=True
-                )
-            ),
+            content=content_from_words_and_segments(words, boxes, segment_ids),
         )
         return instance.add_annotation(
             EntityLabelingAnnotation(

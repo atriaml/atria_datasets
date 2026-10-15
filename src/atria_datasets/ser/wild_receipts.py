@@ -20,6 +20,8 @@ from atria_core.types import (
     SinglePageDocumentInstance,
 )
 
+from atria_datasets.ser.utilities import _sorted_indices_in_reading_order
+
 _DESCRIPTION = "WildReceipts Dataset"
 _DATA_URL = "https://download.openmmlab.com/mmocr/data/wildreceipt.tar"
 _CLASSES = [
@@ -109,23 +111,6 @@ class _WildReceiptsSplit(Sequence[_WildReceiptRecord]):
         return len(self.samples)
 
 
-def _reading_order_indices(boxes: list[list[float]]) -> list[int]:
-    """Match the original utility's y/x sort and adaptive line grouping."""
-    ordered = sorted(range(len(boxes)), key=lambda i: (boxes[i][1], boxes[i][0]))
-    lines: list[list[int]] = []
-    for index in ordered:
-        if not lines:
-            lines.append([index])
-            continue
-        previous = lines[-1][-1]
-        previous_height = boxes[previous][3] - boxes[previous][1]
-        if abs(boxes[previous][1] - boxes[index][1]) <= previous_height * 0.4:
-            lines[-1].append(index)
-        else:
-            lines.append([index])
-    return [index for line in lines for index in sorted(line, key=lambda i: boxes[i][0])]
-
-
 class _WildReceiptsTransform:
     def __init__(self, config: WildReceiptsConfig) -> None:
         self._config = config
@@ -159,13 +144,15 @@ class _WildReceiptsTransform:
             label_names.append(label)
 
         if self._config.apply_reading_order_correction:
-            order = _reading_order_indices(boxes)
+            order = _sorted_indices_in_reading_order(
+                [tuple(box) for box in boxes]
+            )
             words = [words[index] for index in order]
             boxes = [boxes[index] for index in order]
             label_names = [label_names[index] for index in order]
 
         return SinglePageDocumentInstance(
-            sample_id=sample_info["file_name"],
+            sample_id=Path(sample_info["file_name"]).name,
             visual=Image(file_path=str(image_path)),
             content=DocumentContent(
                 elements=ElementArray.from_words(

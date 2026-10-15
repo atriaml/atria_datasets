@@ -55,7 +55,7 @@ time before starting the next. The port scope is limited to datasets named by
 - DocILE is omitted because it is not a base dataset in the current DocDjinn
   synthetic dataset definitions.
 
-## Other DocDjinn synth base datasets
+## Document classification
 
 - [x] Tobacco3482 — verified with `usage/prepare_dataset.py tobacco3482`; in use
   by `tobacco3482_alpha=1.0`
@@ -68,7 +68,27 @@ time before starting the next. The port scope is limited to datasets named by
 
   This follows the original `image_with_ocr` configuration and downloads the
   image archive, OCR archive, and supplied train/test split files.
-- [ ] RVL-CDIP — in use by `rvlcdip` configurations (large dataset)
+- [ ] RVL-CDIP — code ported; runtime verification pending; in use by
+  `rvlcdip` synth configurations.
+
+  RVL-CDIP's OCR and 4k options are assigned to the original config entry in
+  `docdjinn_privacy/run_prepare_dataset.sh`. Run that entry from
+  `docdjinn_privacy`:
+
+  ```bash
+  ./run_prepare_dataset.sh 5
+  ```
+
+  `rvlcdip` has one registration. The script sets `load_ocr=true` and caps
+  train and validation at exactly 4,000 rows. The raw source data stays under
+  the same `rvlcdip` data directory across config changes, while Atria Core
+  distinguishes cached configurations by their config hash.
+
+## Question answering
+
 - [ ] DUE benchmark configurations: ExDocVQA, ExKleisterCharity, and
   ExWikiTableQuestions (`ex_docvqa`, `ex_klc`, and `ex_wiki`)
-- [ ] Layout analysis: PubLayNet, DocLayNet, ICDAR 2019
+
+## Layout analysis
+
+- [ ] PubLayNet, DocLayNet, ICDAR 2019

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 from typing import Any
 
@@ -69,11 +70,28 @@ def prepare_dataset(
 
 
 def main() -> None:
-    """Parse a registered dataset name and run its preparation pipeline."""
+    """Parse a dataset name and optional config overrides."""
     parser = argparse.ArgumentParser()
     parser.add_argument("name", choices=sorted(atria_datasets.datasets.list()))
+    parser.add_argument(
+        "config",
+        nargs="*",
+        metavar="KEY=VALUE",
+        help="Dataset config overrides, with values parsed as JSON when possible.",
+    )
     args = parser.parse_args()
-    prepare_dataset(args.name)
+    dataset_kwargs: dict[str, Any] = {}
+    for item in args.config:
+        key, separator, value = item.partition("=")
+        if not separator or not key:
+            parser.error(f"expected KEY=VALUE, got {item!r}")
+        if value.lower() in {"true", "false"}:
+            dataset_kwargs[key] = value.lower() == "true"
+        elif re.fullmatch(r"-?\d+", value):
+            dataset_kwargs[key] = int(value)
+        else:
+            dataset_kwargs[key] = value
+    prepare_dataset(args.name, **dataset_kwargs)
 
 
 if __name__ == "__main__":
