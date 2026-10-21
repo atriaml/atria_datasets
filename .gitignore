@@ -90,3 +90,4 @@ pyrightconfig.json
 test/
 usage/examples/verify_mapping.ipynb
 usage/examples/verify_mapping.py
+PORTING_CHECKLIST.md
