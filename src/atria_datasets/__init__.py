@@ -26,6 +26,7 @@ _DATASET_IMPORT_PATHS: dict[str, str] = {
     "lam": "atria_datasets.htr.lam.LAM",
     "leopardi": "atria_datasets.htr.leopardi.Leopardi",
     "koenigsfelden": "atria_datasets.htr.koenigsfelden.Koenigsfelden",
+    "mnist": "atria_datasets.image_classification.mnist.MNIST",
     "mmlongbench_doc": "atria_datasets.qa.mmlongbench_doc.MMLongBenchDoc",
     "mp_docvqa": "atria_datasets.qa.mp_docvqa.MPDocVQA",
     "nist_sd19": "atria_datasets.cr.nist_sd19.NISTSD19",
