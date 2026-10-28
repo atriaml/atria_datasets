@@ -19,8 +19,10 @@ from atria_core.types import (
     SinglePageDocumentInstance,
 )
 
-from atria_datasets.ser._legacy_content import content_from_words_and_segments
-from atria_datasets.ser.utilities import _sorted_indices_in_reading_order
+from atria_datasets.ser.utilities import (
+    _sorted_indices_in_reading_order,
+    content_from_words_and_segments,
+)
 
 _HOMEPAGE = "https://guillaumejaume.github.io/FUNSD/"
 _URLS = [UrlSpec(url=f"{_HOMEPAGE}dataset.zip", url_ext=".zip")]

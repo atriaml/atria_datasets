@@ -6,7 +6,7 @@ import json
 import re
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import PIL.Image
 from pdf2image import convert_from_path
@@ -44,7 +44,6 @@ PIL.Image.MAX_IMAGE_PIXELS = 933120000
 class DueBenchmarkConfig(DatasetConfig):
     """Options matching the original DUE loader defaults."""
 
-    config_name: str
     ocr_engine: str = "microsoft_cv"
     answers_extraction_method: str = "v1"
     image_dpi: int = 72
@@ -182,11 +181,17 @@ def _annotations_for_document(doc: dict[str, Any]) -> Iterator[tuple[str, list[s
 
 
 class _DueSplit:
-    def __init__(self, data_dir: Path, config: DueBenchmarkConfig, split: DatasetSplitType):
+    def __init__(
+        self,
+        data_dir: Path,
+        config: DueBenchmarkConfig,
+        due_name: str,
+        split: DatasetSplitType,
+    ) -> None:
         self._data_dir = data_dir
         self._config = config
         self._split = split
-        self._name = config.config_name[2:]
+        self._name = due_name
         self._extracted_name = {
             "InfographicsVQA": "infographics_vqa",
             "DocVQA": "docvqa",
@@ -293,13 +298,27 @@ class _DueSplit:
         if flushed is not None:
             yield flushed
 
-class DueBenchmarkExtractiveQA(Dataset[SinglePageDocumentInstance, DueBenchmarkConfig]):
-    """DUE's original QA/PDF source with DocDjinn's default OCR choice."""
 
-    __module_name__ = "due_benchmark"
+class DueBenchmarkExtractiveQA(Dataset[SinglePageDocumentInstance, DueBenchmarkConfig]):
+    """Extractive QA over one DUE benchmark source, one instance per PDF page.
+
+    A concrete subclass names its DUE source archive via `__due_name__`
+    (e.g. `"DocVQA"`), which selects the dataset and PDF archives to download.
+    """
+
+    __abstract__ = True
+    __due_name__: ClassVar[str]
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if not cls.__abstract__ and "__due_name__" not in cls.__dict__:
+            raise TypeError(
+                f"{cls.__name__} is not abstract and must define a "
+                f"'__due_name__' class variable."
+            )
 
     def _download_urls(self) -> list[UrlSpec]:
-        name = self.config.config_name[2:]
+        name = type(self).__due_name__
         return [
             UrlSpec(
                 url=url.format(name=name),
@@ -320,7 +339,12 @@ class DueBenchmarkExtractiveQA(Dataset[SinglePageDocumentInstance, DueBenchmarkC
         return list(_SPLITS)
 
     def _build_split_iterator(self, split: DatasetSplitType, data_dir: str) -> _DueSplit:
-        return _DueSplit(Path(data_dir), self.config, split)
+        return _DueSplit(
+            data_dir=Path(data_dir),
+            config=self.config,
+            due_name=type(self).__due_name__,
+            split=split,
+        )
 
     def _build_input_transform(
         self,
@@ -366,3 +390,24 @@ class DueBenchmarkExtractiveQA(Dataset[SinglePageDocumentInstance, DueBenchmarkC
             return instance.add_annotation(QuestionAnsweringAnnotation(qa_pairs=qa_pairs))
 
         return transform
+
+
+class DueBenchmarkExDocVQA(DueBenchmarkExtractiveQA):
+    """DUE DocVQA: questions over single-page industry documents."""
+
+    __module_name__ = "due_ex_docvqa"
+    __due_name__ = "DocVQA"
+
+
+class DueBenchmarkExKleisterCharity(DueBenchmarkExtractiveQA):
+    """DUE Kleister Charity: key-information questions over UK charity reports."""
+
+    __module_name__ = "due_ex_klc"
+    __due_name__ = "KleisterCharity"
+
+
+class DueBenchmarkExWikiTableQuestions(DueBenchmarkExtractiveQA):
+    """DUE WikiTableQuestions: questions over rendered Wikipedia tables."""
+
+    __module_name__ = "due_ex_wiki"
+    __due_name__ = "WikiTableQuestions"

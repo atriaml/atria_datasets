@@ -23,7 +23,7 @@ from atria_core.types import (
     SinglePageDocumentInstance,
 )
 
-from atria_datasets.ser._legacy_content import content_from_words_and_segments
+from atria_datasets.ser.utilities import content_from_words_and_segments
 
 _HOMEPAGE = "https://github.com/clovaai/cord"
 _BASE_HF_REPO = "https://huggingface.co/datasets/naver-clova-ix/cord-v2"

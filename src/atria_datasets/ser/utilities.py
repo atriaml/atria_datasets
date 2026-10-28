@@ -1,4 +1,9 @@
+"""Helpers shared by the semantic entity recognition datasets."""
+
+import numpy as np
 import pandas as pd
+
+from atria_core.types import BoundingBoxMode, DocumentContent, ElementArray, OCRLevel
 
 
 def _get_line_bboxes(
@@ -67,3 +72,54 @@ def _sorted_indices_in_reading_order(
         )
     df = pd.DataFrame(word_coords)
     return _get_sorted_indices(df)
+
+
+def content_from_words_and_segments(
+    words: list[str],
+    boxes: list[list[float]],
+    segment_ids: list[int],
+) -> DocumentContent:
+    """Build line-and-word document content from word boxes and their segment ids.
+
+    Each segment becomes a line element spanning its words' boxes, and each
+    word becomes a child element of its segment.
+    """
+    segment_count = max(segment_ids, default=-1) + 1
+    segment_boxes = [
+        [
+            min(boxes[i][0] for i, segment_id in enumerate(segment_ids) if segment_id == group),
+            min(boxes[i][1] for i, segment_id in enumerate(segment_ids) if segment_id == group),
+            max(boxes[i][2] for i, segment_id in enumerate(segment_ids) if segment_id == group),
+            max(boxes[i][3] for i, segment_id in enumerate(segment_ids) if segment_id == group),
+        ]
+        for group in range(segment_count)
+    ]
+
+    segment_ids_array = np.arange(segment_count, dtype=np.int64)
+    word_ids = np.arange(segment_count, segment_count + len(words), dtype=np.int64)
+    elements = ElementArray(
+        ids=np.concatenate((segment_ids_array, word_ids)),
+        parent_ids=np.concatenate(
+            (
+                np.full(segment_count, -1, dtype=np.int64),
+                np.asarray(segment_ids, dtype=np.int64),
+            )
+        ),
+        levels=np.concatenate(
+            (
+                np.full(segment_count, OCRLevel.line.value, dtype=np.int64),
+                np.full(len(words), OCRLevel.word.value, dtype=np.int64),
+            )
+        ),
+        # Annotated quads can extend slightly past the page; ElementArray
+        # requires normalized coordinates in [0, 1].
+        bboxes=np.clip(
+            np.asarray(segment_boxes + boxes, dtype=np.float64).reshape(-1, 4),
+            a_min=0.0,
+            a_max=1.0,
+        ),
+        bbox_mode=BoundingBoxMode.XYXY,
+        normalized=True,
+        texts=np.asarray([""] * segment_count + words, dtype=object),
+    )
+    return DocumentContent(elements=elements)

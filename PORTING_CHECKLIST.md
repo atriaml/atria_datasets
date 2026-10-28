@@ -86,24 +86,27 @@ time before starting the next. The port scope is limited to datasets named by
 
 ## Question answering
 
-- [ ] DUE ExDocVQA (`ex_docvqa`) — ported; runtime verification pending.
+- [ ] DUE ExDocVQA (`due_ex_docvqa`; synth name `ex_docvqa`) — ported;
+  runtime verification pending.
 
   Run from `docdjinn_privacy`:
 
   ```bash
+  ./run_prepare_dataset.sh 7
+  ```
+
+- [ ] DUE ExKleisterCharity (`due_ex_klc`; synth name `ex_klc`) — ported;
+  runtime verification pending.
+
+  ```bash
+  ./run_prepare_dataset.sh 8
+  ```
+
+- [ ] DUE ExWikiTableQuestions (`due_ex_wiki`; synth name `ex_wiki`) — ported;
+  runtime verification pending.
+
+  ```bash
   ./run_prepare_dataset.sh 9
-  ```
-
-- [ ] DUE ExKleisterCharity (`ex_klc`) — ported; runtime verification pending.
-
-  ```bash
-  ./run_prepare_dataset.sh 10
-  ```
-
-- [ ] DUE ExWikiTableQuestions (`ex_wiki`) — ported; runtime verification pending.
-
-  ```bash
-  ./run_prepare_dataset.sh 11
   ```
 
 ## Layout analysis
@@ -117,21 +120,15 @@ time before starting the next. The port scope is limited to datasets named by
   ./run_prepare_dataset.sh 6
   ```
 
-- [ ] DocLayNet 1k (`doclaynet`) — ported; runtime verification pending.
+- [ ] DocLayNet 1k (`doclaynet`) — deferred while QA datasets are verified.
+- [ ] DocLayNet 4k (`doclaynet_4k_cls`, `doclaynet_4k_dla`) — deferred while QA
+  datasets are verified.
+- [ ] PubLayNet 4k (`publaynet`) — ported; runtime verification pending. The
+  runner streams the source, caches the prepared splits in Atria's default
+  MSGPACK storage, and limits train to 4,000 samples.
+
+  Run from `docdjinn_privacy`:
 
   ```bash
-  ./run_prepare_dataset.sh 7
-  ```
-
-- [ ] DocLayNet 4k (`doclaynet_4k_cls`, `doclaynet_4k_dla`) — ported; runtime
-  verification pending.
-
-  ```bash
-  ./run_prepare_dataset.sh 8
-  ```
-
-- [ ] PubLayNet 4k (`publaynet`) — ported; runtime verification pending.
-
-  ```bash
-  ./run_prepare_dataset.sh 12
+  ./run_prepare_dataset.sh 10
   ```
