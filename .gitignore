@@ -10,42 +10,5 @@ wheels/
 .venv
 .coverage
 
-<<<<<<< HEAD
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IDEs
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
-
-# macOS
-.DS_Store
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Logs
-*.log
-
-# MyPy
-.mypy_cache/
-
-# Ruff
-.ruff_cache/
-
-# Pyright
-pyrightconfig.json
-
-# Local scripts / config files
-*.env
-test/
-usage/examples/verify_mapping.ipynb
-usage/examples/verify_mapping.py
-=======
 # Run outputs
 outputs/
->>>>>>> 098e27a (run ci)
