@@ -16,7 +16,6 @@ import atria_datasets
 logger = get_logger(__name__)
 
 
-
 def benchmark_dataset(dataset: Any, n: int = 10000) -> None:
     """Iterate over all splits, time each sample load, and log min/max/avg."""
     import time
@@ -41,7 +40,7 @@ def benchmark_dataset(dataset: Any, n: int = 10000) -> None:
 
 def prepare_dataset(
     name: str,
-    output_dir: str = "./test",
+    output_dir: str = "./outputs/",
     enable_caching: bool = False,
     visualize_samples: bool = True,
     benchmark: bool = False,

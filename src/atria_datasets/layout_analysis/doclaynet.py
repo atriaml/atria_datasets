@@ -15,6 +15,7 @@ from atria_core.types import (
     Image,
     SinglePageDocumentInstance,
 )
+
 from atria_datasets.layout_analysis.config import LayoutDatasetConfig
 from atria_datasets.layout_analysis.utilities import (
     annotated_objects,
