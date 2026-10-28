@@ -66,7 +66,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-atria-core = { git = "https://github.com/atriaml/atria_core.git" }
+atria-core = { path = "../atria_core", editable = true }
 
 [tool.uv]
 managed = true
